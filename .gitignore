@@ -1,0 +1,136 @@
+# VGGT-Gaussian Splatting Research Project - Git Ignore
+# =======================================================
+
+# 🔥 HEAVY MODEL FILES (4.7GB+)
+# =============================
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+vggt_1b_model.pt
+
+# 🔥 PLY FILES (454MB each)
+# =========================
+*.ply
+
+# 🔥 DATASETS & RAW DATA (GB+)
+# =============================
+datasets/*/images/
+datasets/*/sparse/
+datasets/*/dense/
+datasets/*/distorted/
+datasets/*/stereo/
+*.zip
+*.tar
+*.gz
+images.zip
+
+# 🔥 EXPERIMENT OUTPUTS (GB+)
+# ============================
+experiments/*/output/
+experiments/*/ckpts/
+experiments/*/results/
+experiments/*/logs/
+experiments/*/wandb/
+experiments/*/tb_logs/
+
+# 🔥 EXTERNAL LIBRARIES (clone separately)
+# ========================================
+libs/
+
+# 🔥 PYTHON ENVIRONMENTS (1GB+ each)
+# ===================================
+envs/
+*_env/
+.venv/
+.venv-backups/
+venv/
+env/
+
+# 📁 SYSTEM & CACHE FILES
+# ========================
+.claude/
+.gradio/
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.dylib
+*.dll
+
+# 📄 LOGS & TEMPORARY FILES
+# ==========================
+*.log
+*.out
+*.err
+ports.log
+nohup.out
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# 🔧 IDE & EDITOR FILES
+# ======================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.sublime-*
+
+# 📊 LARGE RESULT FILES
+# ======================
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.npy
+*.npz
+
+# 🎥 MEDIA FILES (if large)
+# ==========================
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+
+# 💾 BACKUP FILES
+# ================
+*.bak
+*.backup
+*.old
+*_backup
+*_old
+
+# 📈 PROFILING & DEBUGGING
+# =========================
+*.prof
+*.profile
+.coverage
+htmlcov/
+.pytest_cache/
+
+# ⚡ CUDA CACHE
+# =============
+.nv/
+
+# 🔄 Keep these small files:
+# ===========================
+# !docs/
+# !scripts/
+# !libs/*/src/
+# !requirements.txt
+# !*.md
+# !*.yaml
+# !*.yml
+# !*.json (small configs)
+
+# 📋 NOTES:
+# - Repository size target: ~50MB
+# - Large files go to external storage (Google Drive, etc.)
+# - Use Git LFS for essential large files if needed
