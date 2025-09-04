@@ -15,15 +15,13 @@ vggt_1b_model.pt
 
 # 🔥 DATASETS & RAW DATA (GB+)
 # =============================
-datasets/*/images/
-datasets/*/sparse/
-datasets/*/dense/
-datasets/*/distorted/
-datasets/*/stereo/
+datasets/
+results/
 *.zip
 *.tar
 *.gz
 images.zip
+*.db
 
 # 🔥 EXPERIMENT OUTPUTS (GB+)
 # ============================
