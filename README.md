@@ -7,7 +7,7 @@ RTX 6000 Ada optimization for VGGT+3DGS pipeline research project targeting **WA
 This repository contains research on optimizing the **VGGT (VGGSfM) + Gaussian Splatting** pipeline for practical deployment on RTX 6000 Ada GPUs (48GB VRAM), as opposed to the typical H100 requirements.
 
 ### 🎯 Research Goals
-- **Scalability**: 200+ frame processing capability 
+- **Scalability**: 80 frame processing optimization 
 - **Pipeline Comparison**: 5 different configurations (P1-P5)
 - **Adaptive Selection**: Scene-based automatic pipeline selection
 - **Memory Optimization**: Efficient VRAM utilization for RTX 6000 Ada
@@ -16,15 +16,14 @@ This repository contains research on optimizing the **VGGT (VGGSfM) + Gaussian S
 
 ```
 ├── docs/                    # Research documentation
-│   ├── workflows/          # Research workflows & plans
-│   ├── analysis/           # VRAM and performance analysis  
+│   ├── archive/            # Archived old documents
 │   └── EXPERIMENT_LOG.md   # Experiment tracking
 ├── scripts/                # Utilities and tools
 │   ├── export/             # PLY model extraction
 │   └── utils/              # Context restoration & environment
 ├── datasets/               # Experimental datasets
-│   └── book/               # Sample book dataset (80 frames)
-├── experiments/            # Experiment results
+│   └── DTU/                # DTU dataset (scan24, scan37, etc.)
+├── libs/                   # External libraries (VGGT, gsplat)
 ├── setup_libs.sh          # External library setup
 └── .gitignore             # Optimized for large ML projects
 ```
@@ -72,16 +71,16 @@ source scripts/utils/switch_env.sh
 ## 📈 Current Status
 
 ### ✅ Completed
-- [x] 50K Gaussian Splatting model (2M+ Gaussians)
-- [x] RTX 6000 Ada environment optimization
-- [x] PLY extraction pipeline
-- [x] Repository organization & Git setup
+- [x] Environment setup and separation (vggt_env + gsplat_env)
+- [x] pycolmap version standardization (0.6.1)
+- [x] Frame target adjustment (80 frames realistic max)
+- [x] Research plan documentation (20250903)
 
 ### 🔄 In Progress  
-- [ ] DTU dataset integration (scan24, scan37, scan40, scan55, scan63)
-- [ ] Pipeline comparison framework
-- [ ] Memory profiling & optimization
-- [ ] Adaptive selection implementation
+- [ ] DTU dataset download and preprocessing
+- [ ] P1-P5 pipeline implementation
+- [ ] VGGT integration with gsplat
+- [ ] Memory optimization for 80 frames
 
 ### 🎯 Target Metrics
 - **Quality**: PSNR, SSIM, LPIPS, Chamfer Distance
@@ -90,12 +89,13 @@ source scripts/utils/switch_env.sh
 
 ## 📊 Experimental Results
 
-Currently optimized for **80 frames** (VRAM limited). Target: **150+ frames** with memory optimization.
+Currently targeting **80 frames** (RTX 6000 Ada realistic maximum). Research focus: Memory optimization and pipeline comparison.
 
 | Dataset | Frames | VRAM (GB) | Processing Time | PSNR | Status |
 |---------|--------|-----------|----------------|------|--------|
-| book | 80 | ~35 | ~45 min | - | ✅ Baseline |
-| DTU scan24 | - | - | - | - | 🔄 Planned |
+| DTU scan24 | 80 | TBD | TBD | TBD | 🔄 Planned |
+| DTU scan37 | 80 | TBD | TBD | TBD | 🔄 Planned |
+| ETH3D courtyard | 80 | TBD | TBD | TBD | 🔄 Planned |
 
 ## 🔍 Key Scripts
 

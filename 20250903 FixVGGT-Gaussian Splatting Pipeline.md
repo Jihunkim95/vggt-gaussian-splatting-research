@@ -16,7 +16,7 @@ research_narrative = {
     "Core_Claim": "First systematic evaluation of VGGT+3DGS integration",
     
     "Unique_Angle": {
-        "1": "RTX 6000 Ada enables 200+ frame processing (기존 논문은 H100만 테스트)",
+        "1": "RTX 6000 Ada enables 80+ frame processing (기존 논문은 H100만 테스트)",
         "2": "Practical deployment guide for non-H100 users",
         "3": "Scene-adaptive pipeline selection framework"
     }
@@ -54,8 +54,8 @@ class RTX6000AdaOptimization:
         # RTX 6000 Ada: 48GB 사용 가능
         
         return {
-            'max_frames_single_batch': 220,  # 이론적 최대
-            'optimal_batch_size': 150,      # 안전 마진 포함
+            'max_frames_single_batch': 80,   # RTX 6000 Ada 현실적 최대
+            'optimal_batch_size': 60,       # 안전 마진 포함
             'multi_scene_processing': True,  # 여러 장면 동시 처리
             'memory_efficient_mode': {
                 'gradient_checkpointing': True,
@@ -78,9 +78,9 @@ class RTX6000AdaOptimization:
 ```python
 scalability_experiments = {
     'frame_scaling': {
-        'test_points': [10, 30, 50, 100, 150, 200, 220],
+        'test_points': [10, 30, 50, 60, 70, 80],
         'metrics': ['memory_usage', 'processing_time', 'quality'],
-        'unique_contribution': "RTX 6000 Ada에서 200+ frames 최초 테스트"
+        'unique_contribution': "RTX 6000 Ada에서 80 frames 최적화 테스트"
     },
     
     'resolution_scaling': {
@@ -352,8 +352,8 @@ dataset_strategy = {
     'optional_impressive': {
         'large_scale': {
             'scenes': 1,
-            'frames': 100,  # 500→100으로 축소
-            'why': "RTX 6000 Ada 48GB 활용",
+            'frames': 80,   # 현실적 최대 프레임
+            'why': "RTX 6000 Ada 48GB 최적 활용",
             'priority': "LOW"
         }
     }

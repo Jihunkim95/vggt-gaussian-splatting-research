@@ -4,7 +4,7 @@
 
 ### **실제 제약 사항**
 - **Hardware**: RTX 6000 Ada Generation (49,140 MiB VRAM)
-- **Dataset**: book (200 frames → 80 frames만 사용 가능)
+- **Dataset**: (200 frames → 80 frames만 사용 가능)
 - **병목점**: VGGT 단계에서 VRAM 부족
 
 ### **Memory Usage 추정**

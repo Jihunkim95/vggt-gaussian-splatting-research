@@ -42,18 +42,17 @@ def check_current_environment():
             print(f"  {pkg}: NOT INSTALLED")
 
 def fix_pycolmap_version():
-    """pycolmap를 Dockerfile.gsplat 버전으로 수정"""
-    print("\n🔧 Fixing pycolmap version...")
+    """pycolmap를 0.6.1 표준 버전으로 수정"""
+    print("\n🔧 Fixing pycolmap version to 0.6.1 (standardized)...")
     
     # Uninstall current pycolmap
     if not run_pip_command("pip uninstall pycolmap -y"):
         print("Failed to uninstall pycolmap")
         return False
     
-    # Install git version as specified in Dockerfile.gsplat
-    git_url = "git+https://github.com/rmbrualla/pycolmap@cc7ea4b7301720ac29287dbe450952511b32125e"
-    if not run_pip_command(f"pip install {git_url}"):
-        print("Failed to install git pycolmap")
+    # Install standard version 0.6.1 (VGGT/gsplat compatible)
+    if not run_pip_command("pip install pycolmap==0.6.1"):
+        print("Failed to install pycolmap 0.6.1")
         return False
     
     return True

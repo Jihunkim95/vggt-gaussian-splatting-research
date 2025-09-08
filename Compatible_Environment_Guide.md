@@ -254,17 +254,14 @@ if __name__ == "__main__":
 ### 3️⃣ **환경별 분리 설치 (고급)**
 
 ```bash
-# === 방법 1: VGGT 우선 환경 ===
-pip install pycolmap==0.6.1
-# VGGT 실행 후
-
-# === 방법 2: gsplat 실행 시 ===  
-pip uninstall pycolmap -y
-pip install git+https://github.com/rmbrualla/pycolmap@cc7ea4b7301720ac29287dbe450952511b32125e
-
-# === 방법 3: 통합 해결 (권장) ===
+# === 표준화된 방법 (권장) ===
 # pycolmap==0.6.1로 통일 (VGGT, gsplat 모두 호환)
 pip install pycolmap==0.6.1
+
+# === 분리된 환경 전략 ===
+# VGGT 환경: /workspace/envs/vggt_env
+# gsplat 환경: /workspace/envs/gsplat_env
+# 두 환경 모두 pycolmap==0.6.1 사용
 ```
 
 ## 📊 메모리 최적화 설정
