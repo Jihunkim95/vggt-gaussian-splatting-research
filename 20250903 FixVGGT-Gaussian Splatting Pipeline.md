@@ -107,7 +107,7 @@ class PipelineConfigurations:
     
     def __init__(self):
         self.base_pipelines = {
-            'P1_baseline': 'COLMAP + gsplat',
+            'P1_baseline': 'COLMAP(official) + gsplat',
             'P2_vggt_only': 'VGGT (feed-forward)',
             'P3_vggt_ba': 'VGGT + Bundle Adjustment',
             'P4_vggt_gsplat': 'VGGT + gsplat (no BA)',

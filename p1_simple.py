@@ -11,7 +11,7 @@ def check_data_structure():
     """Check DTU scan24 data structure"""
     print("🔍 Checking DTU scan24 data structure...")
     
-    data_path = Path("/workspace/datasets/DTU/scan24")
+    data_path = Path("/workspace/vggt-gaussian-splatting-research/datasets/DTU/scan1_processed")
     
     if not data_path.exists():
         print(f"❌ Data path not found: {data_path}")
@@ -100,7 +100,7 @@ def find_gsplat_scripts():
 
 def create_output_dir():
     """Create output directory for P1 results"""
-    output_dir = Path("/workspace/results/P1_baseline/scan24")
+    output_dir = Path("/workspace/results/P1_baseline/scan1")
     output_dir.mkdir(parents=True, exist_ok=True)
     print(f"📁 Output directory: {output_dir}")
     return output_dir
@@ -133,7 +133,7 @@ def main():
         # Provide command template
         print("\n🔧 Suggested command:")
         print(f"source /workspace/envs/gsplat_env/bin/activate")
-        print(f"python {script} --data-dir /workspace/datasets/DTU/scan24 --result-dir {output_dir}")
+        print(f"python {script} --data-dir /workspace/vggt-gaussian-splatting-research/datasets/DTU/scan1_processed --result-dir {output_dir}")
     else:
         print("❌ Cannot proceed - no training script found")
 
