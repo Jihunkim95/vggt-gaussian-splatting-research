@@ -39,7 +39,7 @@
 ### **환경 설정 상태**
 | 환경 | 상태 | 주요 패키지 |
 |------|------|------------|
-| **vggt_env** | ✅ 준비됨 | pycolmap==0.6.1, VGGT |
+| **vggt_env** | ✅ 준비됨 | pycolmap==3.10.0, VGGT |
 | **gsplat_env** | ✅ 준비됨 | gsplat==1.5.3, pycolmap==0.6.1 |
 
 ### **코드 구현 상태**
@@ -136,7 +136,7 @@ software_stack:
   pytorch: "2.3.1+cu121" 
   vggt: "facebook/VGGT-1B"
   gsplat: "1.5.3"
-  pycolmap: "0.6.1"
+  pycolmap: "3.10.0"
 ```
 
 ### **데이터 구조**

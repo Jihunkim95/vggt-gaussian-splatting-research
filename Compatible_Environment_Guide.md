@@ -25,7 +25,7 @@ VGGT Paper 및 readme 를 참고로 VGGT + BA + gsplat를 활용하여 image를 
 
 ### 2️⃣ **pycolmap 버전 불일치**  
 ```
-❌ 문제: VGGT는 pycolmap==0.6.1, gsplat은 git 버전 필요
+❌ 문제: VGGT는 pycolmap==3.10.0, gsplat은 git 버전 필요
 ✅ 해결: 환경별 분리 설치 또는 호환 버전 사용
 ```
 
@@ -63,7 +63,7 @@ opencv-python==4.9.0.80          # OpenCV 안정 버전
 
 # ===== COLMAP 처리 (버전별 분리) =====
 # VGGT용
-pycolmap==0.6.1
+pycolmap==3.10.0
 
 # gsplat용 (별도 설치 시)
 # git+https://github.com/rmbrualla/pycolmap@cc7ea4b7301720ac29287dbe450952511b32125e
@@ -106,7 +106,7 @@ pip install numpy==1.26.1 scipy==1.15.3
 pip install pillow==11.0.0 opencv-python==4.9.0.80
 
 # VGGT 전용 pycolmap
-pip install pycolmap==0.6.1
+pip install pycolmap==3.10.0
 
 # 3D 처리 라이브러리
 pip install plyfile==1.1.2 trimesh==3.23.5
@@ -255,13 +255,13 @@ if __name__ == "__main__":
 
 ```bash
 # === 표준화된 방법 (권장) ===
-# pycolmap==0.6.1로 통일 (VGGT, gsplat 모두 호환)
-pip install pycolmap==0.6.1
+# pycolmap==3.10.0로 통일 (VGGT, gsplat 모두 호환)
+pip install pycolmap==3.10.0
 
 # === 분리된 환경 전략 ===
 # VGGT 환경: /workspace/envs/vggt_env
 # gsplat 환경: /workspace/envs/gsplat_env
-# 두 환경 모두 pycolmap==0.6.1 사용
+# 두 환경 모두 pycolmap==3.10.0 사용
 ```
 
 ## 📊 메모리 최적화 설정
