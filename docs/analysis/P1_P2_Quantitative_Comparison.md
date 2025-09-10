@@ -8,10 +8,11 @@
 
 ## 🎯 **실험 설계**
 
-### **공정한 비교를 위한 통제 조건**
+### **실험 통제 조건**
 - **동일 데이터**: scan1 49장 이미지
-- **동일 복잡도**: 568,549개로 통일 (P1 Gaussians 수 기준)
+- **모델 개수 통일**: 568,549개 (비교를 위한 수량 기준)
 - **동일 환경**: RTX 6000 Ada, 48GB VRAM
+- **⚠️ 주의**: Gaussian ≠ Point (표현력 차이)
 
 ### **파이프라인 정의**
 | 파이프라인 | 구성 | 출력 형태 | 평가 방식 |
@@ -28,7 +29,7 @@
 |-------|-------------------|----------------|--------|
 | **처리 시간** | **47.2분** (2,832초) | **12.5초** | **227배 빠름** 🚀 |
 | **메모리 사용** | ~20GB | ~10GB | 50% 절약 |
-| **Model Count** | 568,549 Gaussians | 568,549 Points | 동일 complexity |
+| **Model Count** | 568,549 Gaussians | 568,549 Points | ⚠️ **개수만 동일 (표현력 상이)** |
 
 ### **2. 기하학적 정확도**
 ```
@@ -58,6 +59,7 @@ Chamfer Distance Analysis (2025-09-10)
 ### **P2에서 PSNR/SSIM/LPIPS 측정 불가능한 이유**
 
 #### **1. 출력 형태의 근본적 차이**
+**중요**: 568,549개 개수는 동일하지만 **표현력이 완전히 다름**
 ```python
 output_comparison = {
     "P1_gaussian_splatting": {
@@ -81,6 +83,25 @@ output_comparison = {
 - **SSIM**: 이미지 구조 비교 → P2는 이미지 없음  
 - **LPIPS**: 지각적 특징 비교 → P2는 CNN 입력 불가
 
+#### **3. 표현력 차이 (중요)**
+```python
+representation_complexity = {
+    "P1_gaussian": {
+        "parameters_per_element": 14,  # 위치(3) + 색상(3) + 불투명도(1) + 공분산(6) + 회전(1)
+        "3d_representation": "연속적 타원체 (부피 있음)",
+        "rendering": "미분가능한 rasterization",
+        "total_parameters": "568,549 × 14 = 7,959,686개"
+    },
+    "P2_point": {
+        "parameters_per_element": 6,   # 위치(3) + 색상(3)만
+        "3d_representation": "이산적 점 (부피 없음)", 
+        "rendering": "단순 투영만 가능",
+        "total_parameters": "568,549 × 6 = 3,411,294개"
+    }
+}
+```
+**결론**: P1이 실제로는 **2.3배 더 복잡한 표현력**을 가짐
+
 ---
 
 ## 📈 **Trade-off 분석**
@@ -96,7 +117,7 @@ P2: Unknown Quality + Fast (12.5s) + Geometric Error (CD 4.49)
 |----------|----------------|------|
 | **실시간 Preview** | P2 | 12.5초 빠른 처리 |
 | **고품질 렌더링** | P1 | PSNR 23.48 보장 |
-| **3D 구조 분석** | P2 | 17배 더 많은 포인트 |
+| **3D 구조 분석** | P1/P2 동일 | 568,549개로 통일 |
 | **최종 결과물** | P1 | 검증된 렌더링 품질 |
 
 ---
@@ -134,12 +155,60 @@ P2: Unknown Quality + Fast (12.5s) + Geometric Error (CD 4.49)
 
 ---
 
+## 💻 **실험 재현 코드**
+
+### **P2 Feed-Forward 파이프라인 생성**
+
+```bash
+# 1. max_points_for_colmap 값 수정
+# 파일: /workspace/vggt-gaussian-splatting-research/libs/vggt/demo_colmap.py
+# 라인 196: max_points_for_colmap = 100000 → 568549 변경
+
+# 2. VGGT Feed-Forward 실행 (BA 없이)
+source /workspace/envs/vggt_env/bin/activate
+cd libs/vggt
+python demo_colmap.py \
+    --scene_dir /workspace/vggt-gaussian-splatting-research/datasets/DTU/scan1_raw \
+    --conf_thres_value 5.0
+
+# 3. 결과 복사
+mkdir -p /workspace/results/P2_VGGT_scan1_568K_feedforward
+cp /workspace/vggt-gaussian-splatting-research/datasets/DTU/scan1_raw/sparse/points.ply \
+   /workspace/results/P2_VGGT_scan1_568K_feedforward/vggt_scan1_568549_feedforward.ply
+```
+
+### **코드 수정 상세**
+
+```python
+# demo_colmap.py 라인 196 변경사항
+# 기존:
+max_points_for_colmap = 100000  # randomly sample 3D points
+
+# 변경 후:
+max_points_for_colmap = 568549  # P1과 동일한 complexity로 설정
+```
+
+### **실행 결과 검증**
+
+```bash
+# PLY 헤더 확인
+head -10 /workspace/results/P2_VGGT_scan1_568K_feedforward/vggt_scan1_568549_feedforward.ply
+# element vertex 568549 확인
+
+# 파일 크기 확인  
+du -sh /workspace/results/P2_VGGT_scan1_568K_feedforward/vggt_scan1_568549_feedforward.ply
+# 8.7M 출력 확인
+```
+
+---
+
 ## 📚 **References**
 
 - 20250903 연구 계획서: Multi-dimensional Evaluation 섹션
 - P1 결과: `/workspace/results/P1_baseline_scan1_7k/stats/val_step6999.json`
 - P2 결과: `/workspace/results/P2_VGGT_scan1_568K/vggt_scan1_568549.ply`
-- Chamfer Distance 계산 코드: 본 문서 실험 섹션 참조
+- P2 Feed-Forward: `/workspace/results/P2_VGGT_scan1_568K_feedforward/vggt_scan1_568549_feedforward.ply`
+- Chamfer Distance 계산 코드: 상기 실험 재현 코드 참조
 
 ---
 
