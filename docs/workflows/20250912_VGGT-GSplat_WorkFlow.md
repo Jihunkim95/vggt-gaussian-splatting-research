@@ -98,13 +98,13 @@ lessons_learned = {
 ```bash
 # 기본 실행 (문제 발생)
 python demo_colmap.py \
-    --scene_dir /workspace/vggt-gaussian-splatting-research/datasets/DTU/scan1_raw \
+    --scene_dir ./datasets/DTU/scan1_raw \
     --use_ba \
     --conf_thres_value 5.0
 
 # 개선된 실행 (다음 시도 예정)
 python demo_colmap.py \
-    --scene_dir /workspace/vggt-gaussian-splatting-research/datasets/DTU/scan1_raw \
+    --scene_dir ./datasets/DTU/scan1_raw \
     --use_ba \
     --conf_thres_value 5.0 \
     --max_reproj_error 50.0

@@ -94,7 +94,7 @@ def create_simple_colmap_scan1():
     """Create simple COLMAP files for scan1 that gsplat can read"""
     
     # 경로 설정
-    data_dir = Path("/workspace/vggt-gaussian-splatting-research/datasets/DTU/scan1_processed")
+    data_dir = Path("./datasets/DTU/scan1_processed")
     image_dir = data_dir / "images"
     sparse_dir = data_dir / "sparse" / "0"
     

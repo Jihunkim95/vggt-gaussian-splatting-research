@@ -150,7 +150,7 @@ def run_p1_baseline(data_dir, output_dir, max_steps=30000):
 def main():
     parser = argparse.ArgumentParser(description="P1 Baseline Pipeline: COLMAP + gsplat")
     parser.add_argument("--data-dir", 
-                      default="/workspace/datasets/DTU/scan24",
+                      default="./datasets/DTU/scan24",
                       help="DTU scan24 data directory")
     parser.add_argument("--output-dir",
                       default="/workspace/results/P1_baseline/scan24", 

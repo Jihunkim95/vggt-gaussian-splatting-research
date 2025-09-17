@@ -11,7 +11,7 @@ def create_colmap_reconstruction():
     """scan1 이미지들로 COLMAP sparse 재구성 생성"""
     
     # 경로 설정
-    data_dir = Path("/workspace/vggt-gaussian-splatting-research/datasets/DTU/scan1_processed")
+    data_dir = Path("./datasets/DTU/scan1_processed")
     image_dir = data_dir / "images"
     sparse_dir = data_dir / "sparse" / "0"
     
