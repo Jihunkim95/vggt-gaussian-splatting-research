@@ -3,8 +3,8 @@
 # VGGT + gsplat 환경 전환 스크립트
 # 사용법: source switch_env.sh [vggt|gsplat|status]
 
-VGGT_ENV="/workspace/vggt_env"
-GSPLAT_ENV="/workspace/gsplat_env"
+VGGT_ENV="/workspace/vggt-gaussian-splatting-research/env/vggt_env"
+GSPLAT_ENV="/workspace/vggt-gaussian-splatting-research/env/gsplat_env"
 
 function show_status() {
     echo "📊 환경 상태 확인"
