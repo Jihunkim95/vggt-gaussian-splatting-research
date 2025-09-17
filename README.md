@@ -1,6 +1,14 @@
-<<<<<<< HEAD
 <div align="center">
 <h1>VGGT: Visual Geometry Grounded Transformer</h1>
+
+## 🚀 **Quick Start**
+**처음 사용자**: [`QUICK_START_GUIDE.md`](./QUICK_START_GUIDE.md) - DTU 다운로드부터 P1-P5 실행까지 완전 가이드
+
+**파이프라인 실행**: [`run_pipeline.sh`](./run_pipeline.sh) - P1/P2/P3 실행 스크립트
+
+**상세 가이드**: [`PIPELINE_EXECUTION_GUIDE.md`](./PIPELINE_EXECUTION_GUIDE.md) - 파이프라인별 상세 설명
+
+---
 
 <a href="https://jytime.github.io/data/VGGT_CVPR25.pdf" target="_blank" rel="noopener noreferrer">
   <img src="https://img.shields.io/badge/Paper-VGGT" alt="Paper PDF">
@@ -289,20 +297,20 @@ Thanks to these great repositories: [PoseDiffusion](https://github.com/facebookr
 See the [LICENSE](./LICENSE.txt) file for details about the license under which this code is made available.
 
 Please note that only this [model checkpoint](https://huggingface.co/facebook/VGGT-1B-Commercial) allows commercial usage. This new checkpoint achieves the same performance level (might be slightly better) as the original one, e.g., AUC@30: 90.37 vs. 89.98 on the Co3D dataset.
-=======
-# 🚀 VGGT-Gaussian Splatting Research
 
-RTX 6000 Ada optimization for VGGT+3DGS pipeline research project targeting **WACV 2026**.
+---
 
-## 📊 Project Overview
+## 🚀 **VGGT-Gaussian Splatting Research Extension**
 
-This repository contains research on optimizing the **VGGT (VGGSfM) + Gaussian Splatting** pipeline for practical deployment on RTX 6000 Ada GPUs (48GB VRAM), as opposed to the typical H100 requirements.
+**RTX 6000 Ada optimization** for VGGT+3DGS pipeline research project targeting **WACV 2026**.
 
-### 🎯 Research Goals
-- **Scalability**: 80 frame processing optimization 
-- **Pipeline Comparison**: 5 different configurations (P1-P5)
-- **Adaptive Selection**: Scene-based automatic pipeline selection
-- **Memory Optimization**: Efficient VRAM utilization for RTX 6000 Ada
+### **📊 Research Extension Overview**
+This research extends the original VGGT for **practical deployment on RTX 6000 Ada GPUs** (48GB VRAM), featuring:
+
+- **🎯 Pipeline Comparison**: 5 different configurations (P1-P5)
+- **⚡ Memory Optimization**: Efficient VRAM utilization for RTX 6000 Ada
+- **🔬 Scalability**: 60-80 frame processing optimization
+- **📈 Performance Analysis**: Speed vs Quality trade-offs
 
 ## 📁 Repository Structure
 
@@ -440,8 +448,12 @@ Research project - please cite if used in publications.
 
 ---
 
-**Last Updated**: 2025-09-03  
-**Maintainer**: [@Jihunkim95](https://github.com/Jihunkim95)
+---
 
-🤖 *Generated with [Claude Code](https://claude.ai/code)*
->>>>>>> 64508f139269a2b3fa431d33e58c92211bc04346
+### **📚 Quick Start Documentation**
+- **🚀 Complete Guide**: [`QUICK_START_GUIDE.md`](./QUICK_START_GUIDE.md) - Full setup from DTU download to P1-P5 execution
+- **⚡ Pipeline Execution**: [`run_pipeline.sh`](./run_pipeline.sh) - Automated P1/P2/P3 runner
+- **📖 Detailed Instructions**: [`PIPELINE_EXECUTION_GUIDE.md`](./PIPELINE_EXECUTION_GUIDE.md) - Pipeline-specific details
+
+**Research Extension Maintainer**: [@Jihunkim95](https://github.com/Jihunkim95)
+**Last Updated**: 2025-09-17
