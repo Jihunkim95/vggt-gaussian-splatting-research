@@ -1,7 +1,19 @@
-torch==2.3.1
-torchvision==0.18.1
-numpy==1.26.1
+# Core Requirements (Minimal)
+# For detailed vggt_env setup, see requirements_vggt_env.txt
+
+torch>=2.3.1
+torchvision>=0.18.1
+numpy>=1.26.1
 Pillow
 huggingface_hub
 einops
 safetensors
+
+# VGGT-specific (CRITICAL VERSIONS)
+pycolmap==3.10.0  # Must be 3.10.0 for API compatibility
+trimesh
+transformers
+accelerate
+
+# Install LightGlue from GitHub:
+# pip install git+https://github.com/cvg/LightGlue.git
