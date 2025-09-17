@@ -10,7 +10,7 @@ mkdir -p libs/
 # Clone VGGT repository
 echo "📥 Cloning VGGT repository..."
 if [ ! -d "libs/vggt" ]; then
-    git clone https://github.com/facebookresearch/vggsfm.git libs/vggt
+    git clone https://github.com/facebookresearch/vggt.git libs/vggt
     echo "✅ VGGT cloned successfully"
 else
     echo "⏭️ VGGT already exists, skipping..."
