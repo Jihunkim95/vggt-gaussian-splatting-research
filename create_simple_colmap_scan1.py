@@ -90,11 +90,15 @@ def create_colmap_points3d_bin(sparse_dir):
     
     print(f"✅ points3D.bin: {points_path.stat().st_size} bytes (empty)")
 
-def create_simple_colmap_scan1():
+def create_simple_colmap_scan1(data_dir=None):
     """Create simple COLMAP files for scan1 that gsplat can read"""
-    
-    # 경로 설정
-    data_dir = Path("./datasets/DTU/scan1_processed")
+
+    # 경로 설정 - 인자로 받거나 기본값 사용
+    if data_dir is None:
+        data_dir = Path("./datasets/DTU/scan1_standard")
+    else:
+        data_dir = Path(data_dir)
+
     image_dir = data_dir / "images"
     sparse_dir = data_dir / "sparse" / "0"
     
@@ -148,8 +152,12 @@ def create_simple_colmap_scan1():
         return False
 
 if __name__ == "__main__":
-    success = create_simple_colmap_scan1()
-    
+    import sys
+
+    # 명령행 인자 처리
+    data_dir = sys.argv[1] if len(sys.argv) > 1 else None
+    success = create_simple_colmap_scan1(data_dir)
+
     if success:
         print("\n🎉 gsplat용 COLMAP 파일 준비 완료!")
         print("📋 다음 단계: P1 Baseline training 실행")

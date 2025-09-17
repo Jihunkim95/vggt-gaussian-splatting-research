@@ -8,10 +8,11 @@ TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 RESULTS_BASE="./results"
 
 if [ -z "$PIPELINE" ]; then
-    echo "사용법: $0 <P1|P2|P3|P4|P5> [옵션]"
+    echo "사용법: $0 <P1|P1R|P2|P3|P4|P5> [옵션]"
     echo ""
     echo "파이프라인 설명:"
-    echo "  P1: COLMAP + gsplat Baseline"
+    echo "  P1: Original COLMAP SfM + gsplat (Images only)"
+    echo "  P1R: Real COLMAP SfM + gsplat (Images only)"
     echo "  P2: VGGT Feed-Forward Only"
     echo "  P3: VGGT + Bundle Adjustment"
     echo "  P4: VGGT → COLMAP → gsplat"
@@ -45,10 +46,45 @@ START_TIME=$(date +%s)
 
 case "$PIPELINE" in
     "P1")
-        echo "📋 P1: COLMAP + gsplat Baseline 실행"
-        source scripts/utils/switch_env.sh gsplat
-        python create_simple_colmap_scan1.py  # COLMAP 파일 생성
+        echo "📋 P1: Original COLMAP SfM + gsplat (Images Only) 실행"
+        echo "🔧 gsplat 환경 활성화 중..."
+        source ./env/gsplat_env/bin/activate
+
+        # gsplat 환경에 필요한 추가 패키지 확인
+        echo "📦 필요 패키지 설치 확인 중..."
+        export TMPDIR=/data/tmp
+        export TORCH_CUDA_ARCH_LIST="8.9"
+        pip install --no-deps imageio tqdm tyro > /dev/null 2>&1 || true
+
+        # 기존 sparse 재구성 제거하여 이미지만으로 시작 (진짜 COLMAP SfM)
+        if [ -d "$TEMP_WORK_DIR/sparse" ]; then
+            echo "🧹 기존 sparse 재구성 제거 (이미지만으로 시작)"
+            rm -rf "$TEMP_WORK_DIR/sparse"
+        fi
         python p1_baseline.py \
+            --data-dir "$TEMP_WORK_DIR" \
+            --output-dir "$RESULT_DIR" \
+            --max-steps 7000
+        ;;
+
+    "P1R")
+        echo "📋 P1R: Real COLMAP SfM + gsplat (Images Only) 실행"
+        echo "🔧 gsplat 환경 활성화 중..."
+        source ./env/gsplat_env/bin/activate
+
+        # gsplat 환경에 필요한 추가 패키지 확인
+        echo "📦 필요 패키지 설치 확인 중..."
+        export TMPDIR=/data/tmp
+        export TORCH_CUDA_ARCH_LIST="8.9"
+        pip install --no-deps imageio tqdm tyro > /dev/null 2>&1 || true
+
+        # 기존 sparse 재구성 제거하여 이미지만으로 시작
+        if [ -d "$TEMP_WORK_DIR/sparse" ]; then
+            echo "🧹 기존 sparse 재구성 제거 (이미지만으로 시작)"
+            rm -rf "$TEMP_WORK_DIR/sparse"
+        fi
+
+        python p1_pycolmap.py \
             --data-dir "$TEMP_WORK_DIR" \
             --output-dir "$RESULT_DIR" \
             --max-steps 7000
@@ -139,6 +175,39 @@ with open(os.path.join(result_dir, 'analysis.json'), 'w') as f:
 
 print(f'✅ {results[\"points3D_count\"]:,} 3D points generated')
 print(f'📁 PLY file: {results[\"ply_file_size_mb\"]} MB')
+"
+fi
+
+# P1 결과에서 타이밍 정보 통합
+if [ "$PIPELINE" = "P1" ] && [ -f "$RESULT_DIR/timing_results.json" ]; then
+    echo "📊 P1 타이밍 결과 통합 중..."
+    python -c "
+import json
+import os
+
+result_dir = '$RESULT_DIR'
+timing_file = os.path.join(result_dir, 'timing_results.json')
+analysis_file = os.path.join(result_dir, 'analysis.json')
+
+# 타이밍 데이터 로드
+with open(timing_file, 'r') as f:
+    timing_data = json.load(f)
+
+# 기존 분석 데이터가 있으면 통합
+if os.path.exists(analysis_file):
+    with open(analysis_file, 'r') as f:
+        analysis_data = json.load(f)
+    analysis_data.update(timing_data)
+else:
+    analysis_data = timing_data
+
+# 통합된 결과 저장
+with open(analysis_file, 'w') as f:
+    json.dump(analysis_data, f, indent=2)
+
+print(f'✅ 타이밍 정보 통합 완료')
+print(f'⏱️ 총 파이프라인 시간: {timing_data[\"pipeline_total_seconds\"]}초')
+print(f'⏱️ 훈련 시간: {timing_data[\"training_seconds\"]}초')
 "
 fi
 
