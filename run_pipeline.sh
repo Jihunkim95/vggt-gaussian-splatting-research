@@ -114,7 +114,46 @@ case "$PIPELINE" in
         cp -r "$TEMP_WORK_DIR/sparse" "$RESULT_DIR/"
         ;;
 
-    "P4"|"P5")
+    "P4")
+        echo "📋 P4: VGGT Feed-Forward → gsplat 실행"
+
+        # Step 1: VGGT Feed-Forward (vggt_env)
+        echo "🔴 Step 1: VGGT Feed-Forward"
+        source ./env/vggt_env/bin/activate
+        PYTHONPATH=./libs/vggt:$PYTHONPATH python demo_colmap.py \
+            --scene_dir "$TEMP_WORK_DIR" \
+            --conf_thres_value 5.0
+
+        # Verify VGGT output
+        if [ ! -f "$TEMP_WORK_DIR/sparse/points3D.bin" ]; then
+            echo "❌ VGGT feed-forward failed - no sparse reconstruction"
+            exit 1
+        fi
+        echo "✅ VGGT sparse reconstruction completed"
+
+        # Step 2: gsplat Training (gsplat_env)
+        echo "🔵 Step 2: gsplat Training"
+        source ./env/gsplat_env/bin/activate
+
+        # gsplat 환경에 필요한 추가 패키지 확인
+        echo "📦 필요 패키지 설치 확인 중..."
+        export TMPDIR=/data/tmp
+        export TORCH_CUDA_ARCH_LIST="8.9"
+        pip install --no-deps imageio tqdm tyro > /dev/null 2>&1 || true
+
+        python ./libs/gsplat/examples/simple_trainer.py default \
+            --data-dir "$TEMP_WORK_DIR" \
+            --result-dir "$RESULT_DIR" \
+            --data-factor 1 \
+            --max-steps 7000 \
+            --save-ply \
+            --disable-viewer
+
+        # 결과 복사 (VGGT sparse도 함께)
+        cp -r "$TEMP_WORK_DIR/sparse" "$RESULT_DIR/vggt_sparse"
+        ;;
+
+    "P5")
         echo "❌ $PIPELINE은 아직 구현되지 않았습니다."
         exit 1
         ;;
