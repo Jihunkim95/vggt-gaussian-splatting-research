@@ -3,6 +3,9 @@
 # 파이프라인 실행 및 결과 저장 스크립트
 # 사용법: ./run_pipeline.sh <파이프라인> [옵션]
 
+# PyTorch CUDA 메모리 단편화 방지
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
 PIPELINE="$1"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 RESULTS_BASE="./results"
@@ -108,7 +111,8 @@ case "$PIPELINE" in
             --scene_dir "$TEMP_WORK_DIR" \
             --use_ba \
             --conf_thres_value 5.0 \
-            --max_reproj_error 8.0
+            --max_reproj_error 8.0 \
+            --max_query_pts 2048
 
         # 결과 복사
         cp -r "$TEMP_WORK_DIR/sparse" "$RESULT_DIR/"
@@ -163,7 +167,8 @@ case "$PIPELINE" in
             --scene_dir "$TEMP_WORK_DIR" \
             --use_ba \
             --conf_thres_value 5.0 \
-            --max_reproj_error 8.0
+            --max_reproj_error 8.0 \
+            --max_query_pts 2048
 
         # Verify VGGT+BA output
         if [ ! -f "$TEMP_WORK_DIR/sparse/points3D.bin" ]; then
