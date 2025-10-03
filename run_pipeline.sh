@@ -1,17 +1,18 @@
 #!/bin/bash
 
 # 파이프라인 실행 및 결과 저장 스크립트
-# 사용법: ./run_pipeline.sh <파이프라인> [옵션]
+# 사용법: ./run_pipeline.sh <파이프라인> [데이터셋_디렉토리]
 
 # PyTorch CUDA 메모리 단편화 방지
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 PIPELINE="$1"
+DATA_DIR="${2:-./datasets/DTU/scan1_standard}"  # 기본값: scan1_standard
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 RESULTS_BASE="./results"
 
 if [ -z "$PIPELINE" ]; then
-    echo "사용법: $0 <P1|P1R|P2|P3|P4|P5> [옵션]"
+    echo "사용법: $0 <P1|P1R|P2|P3|P4|P5> [데이터셋_디렉토리]"
     echo ""
     echo "파이프라인 설명:"
     echo "  P1: Original COLMAP SfM + gsplat (Images only)"
@@ -20,14 +21,22 @@ if [ -z "$PIPELINE" ]; then
     echo "  P3: VGGT + Bundle Adjustment"
     echo "  P4: VGGT → COLMAP → gsplat"
     echo "  P5: Advanced Hybrid Pipeline"
+    echo ""
+    echo "예시:"
+    echo "  $0 P5                                    # 기본 경로 사용"
+    echo "  $0 P5 ./datasets/DTU/scan1_standard      # 명시적 경로 지정"
+    echo "  $0 P5 ./datasets/DTU/custom_scene        # 커스텀 씬 사용"
     exit 1
 fi
 
-# 표준 데이터셋 준비 확인
-STANDARD_DIR="./datasets/DTU/scan1_standard"
+# 데이터셋 디렉토리 검증
+STANDARD_DIR="$DATA_DIR"
 if [ ! -d "$STANDARD_DIR/images" ]; then
-    echo "❌ 표준 데이터셋이 준비되지 않았습니다."
-    echo "🔧 먼저 실행하세요: ./prepare_standard_dataset.sh './datasets/DTU/SampleSet/MVS Data/Cleaned/scan1/images'"
+    echo "❌ 데이터셋 디렉토리가 존재하지 않거나 images 폴더가 없습니다: $STANDARD_DIR"
+    echo "🔧 먼저 실행하세요: ./prepare_standard_dataset.sh '<원본_이미지_경로>'"
+    echo ""
+    echo "사용 가능한 데이터셋:"
+    find ./datasets -type d -name "images" 2>/dev/null | sed 's|/images||' | head -5
     exit 1
 fi
 
