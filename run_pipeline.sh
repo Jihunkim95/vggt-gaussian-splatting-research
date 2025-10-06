@@ -6,17 +6,25 @@
 # PyTorch CUDA 메모리 단편화 방지
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
+# H100 GPU 지원 (compute capability 9.0)
+export TORCH_CUDA_ARCH_LIST="9.0"
+export CUDA_HOME=/opt/cuda-12.1
+export PATH=/opt/cuda-12.1/bin:$PATH
+export TMPDIR=/data/tmp
+
 PIPELINE="$1"
 DATA_DIR="${2:-./datasets/DTU/scan1_standard}"  # 기본값: scan1_standard
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 RESULTS_BASE="./results"
+
+# 데이터셋 경로에서 스캔 이름 추출 (예: scan24_standard → scan24)
+SCAN_NAME=$(basename "$DATA_DIR" | sed 's/_standard$//')
 
 if [ -z "$PIPELINE" ]; then
     echo "사용법: $0 <P1|P1R|P2|P3|P4|P5> [데이터셋_디렉토리]"
     echo ""
     echo "파이프라인 설명:"
     echo "  P1: Original COLMAP SfM + gsplat (Images only)"
-    echo "  P1R: Real COLMAP SfM + gsplat (Images only)"
     echo "  P2: VGGT Feed-Forward Only"
     echo "  P3: VGGT + Bundle Adjustment"
     echo "  P4: VGGT → COLMAP → gsplat"
@@ -40,8 +48,8 @@ if [ ! -d "$STANDARD_DIR/images" ]; then
     exit 1
 fi
 
-# 결과 디렉토리 생성
-RESULT_DIR="${RESULTS_BASE}/${PIPELINE}_${TIMESTAMP}"
+# 결과 디렉토리 생성 (스캔 이름 포함)
+RESULT_DIR="${RESULTS_BASE}/${PIPELINE}_${SCAN_NAME}_${TIMESTAMP}"
 mkdir -p "$RESULT_DIR"
 
 # 임시 작업 디렉토리 생성 (충돌 방지)
@@ -65,7 +73,7 @@ case "$PIPELINE" in
         # gsplat 환경에 필요한 추가 패키지 확인
         echo "📦 필요 패키지 설치 확인 중..."
         export TMPDIR=/data/tmp
-        export TORCH_CUDA_ARCH_LIST="8.9"
+        export TORCH_CUDA_ARCH_LIST="9.0"
         pip install --no-deps imageio tqdm tyro > /dev/null 2>&1 || true
 
         # 기존 sparse 재구성 제거하여 이미지만으로 시작 (진짜 COLMAP SfM)
@@ -74,29 +82,6 @@ case "$PIPELINE" in
             rm -rf "$TEMP_WORK_DIR/sparse"
         fi
         python p1_baseline.py \
-            --data-dir "$TEMP_WORK_DIR" \
-            --output-dir "$RESULT_DIR" \
-            --max-steps 7000
-        ;;
-
-    "P1R")
-        echo "📋 P1R: Real COLMAP SfM + gsplat (Images Only) 실행"
-        echo "🔧 gsplat 환경 활성화 중..."
-        source ./env/gsplat_env/bin/activate
-
-        # gsplat 환경에 필요한 추가 패키지 확인
-        echo "📦 필요 패키지 설치 확인 중..."
-        export TMPDIR=/data/tmp
-        export TORCH_CUDA_ARCH_LIST="8.9"
-        pip install --no-deps imageio tqdm tyro > /dev/null 2>&1 || true
-
-        # 기존 sparse 재구성 제거하여 이미지만으로 시작
-        if [ -d "$TEMP_WORK_DIR/sparse" ]; then
-            echo "🧹 기존 sparse 재구성 제거 (이미지만으로 시작)"
-            rm -rf "$TEMP_WORK_DIR/sparse"
-        fi
-
-        python p1_pycolmap.py \
             --data-dir "$TEMP_WORK_DIR" \
             --output-dir "$RESULT_DIR" \
             --max-steps 7000
@@ -121,7 +106,7 @@ case "$PIPELINE" in
             --use_ba \
             --conf_thres_value 5.0 \
             --max_reproj_error 8.0 \
-            --max_query_pts 2048
+            --max_query_pts 4096
 
         # 결과 복사
         cp -r "$TEMP_WORK_DIR/sparse" "$RESULT_DIR/"
@@ -151,7 +136,7 @@ case "$PIPELINE" in
         # gsplat 환경에 필요한 추가 패키지 확인
         echo "📦 필요 패키지 설치 확인 중..."
         export TMPDIR=/data/tmp
-        export TORCH_CUDA_ARCH_LIST="8.9"
+        export TORCH_CUDA_ARCH_LIST="9.0"
         pip install --no-deps imageio tqdm tyro > /dev/null 2>&1 || true
 
         python ./libs/gsplat/examples/simple_trainer.py default \
@@ -177,7 +162,7 @@ case "$PIPELINE" in
             --use_ba \
             --conf_thres_value 5.0 \
             --max_reproj_error 8.0 \
-            --max_query_pts 2048
+            --max_query_pts 4096
 
         # Verify VGGT+BA output
         if [ ! -f "$TEMP_WORK_DIR/sparse/points3D.bin" ]; then
@@ -193,7 +178,7 @@ case "$PIPELINE" in
         # gsplat 환경에 필요한 추가 패키지 확인
         echo "📦 필요 패키지 설치 확인 중..."
         export TMPDIR=/data/tmp
-        export TORCH_CUDA_ARCH_LIST="8.9"
+        export TORCH_CUDA_ARCH_LIST="9.0"
         pip install --no-deps imageio tqdm tyro > /dev/null 2>&1 || true
 
         python ./libs/gsplat/examples/simple_trainer.py default \

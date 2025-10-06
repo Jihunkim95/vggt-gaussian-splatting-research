@@ -3,8 +3,6 @@
 # 표준 데이터셋 준비 스크립트
 # P1-P5 파이프라인 실행 전 반드시 실행해야 함
 
-STANDARD_DIR="./datasets/DTU/scan1_standard"
-STANDARD_IMAGES_DIR="$STANDARD_DIR/images"
 MAX_IMAGES=60
 
 echo "🔧 표준 데이터셋 준비 중..."
@@ -12,7 +10,8 @@ echo "🔧 표준 데이터셋 준비 중..."
 # 입력 검증
 if [ $# -ne 1 ]; then
     echo "사용법: $0 <원본_이미지_디렉토리>"
-    echo "예시: $0 './datasets/DTU/SampleSet/MVS Data/Cleaned/scan1/images'"
+    echo "예시: $0 './datasets/DTU/Rectified/scan1_train'"
+    echo "예시: $0 './datasets/DTU/Rectified/scan24_train'"
     exit 1
 fi
 
@@ -22,6 +21,14 @@ if [ ! -d "$SOURCE_DIR" ]; then
     echo "❌ 원본 디렉토리가 존재하지 않습니다: $SOURCE_DIR"
     exit 1
 fi
+
+# 스캔 이름 자동 추출 (scan1_train → scan1, scan24_train → scan24)
+SCAN_NAME=$(basename "$SOURCE_DIR" | sed 's/_train$//')
+STANDARD_DIR="./datasets/DTU/${SCAN_NAME}_standard"
+STANDARD_IMAGES_DIR="$STANDARD_DIR/images"
+
+echo "📂 입력: $SOURCE_DIR"
+echo "📂 출력: $STANDARD_DIR"
 
 # 표준 디렉토리 생성
 echo "📁 표준 디렉토리 생성: $STANDARD_DIR"
