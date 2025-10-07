@@ -84,7 +84,14 @@ case "$PIPELINE" in
         python p1_baseline.py \
             --data-dir "$TEMP_WORK_DIR" \
             --output-dir "$RESULT_DIR" \
-            --max-steps 7000
+            --data-factor 1 \
+            --max-steps 30000 \
+            --eval-steps 30000 \
+            --save-steps 7000 15000 30000 \
+            --ply-steps 7000 15000 30000 \
+            --save-ply \
+            --disable-viewer \
+            --tb-every 1000
         ;;
 
     "P2")
@@ -143,9 +150,13 @@ case "$PIPELINE" in
             --data-dir "$TEMP_WORK_DIR" \
             --result-dir "$RESULT_DIR" \
             --data-factor 1 \
-            --max-steps 7000 \
+            --max-steps 30000 \
+            --eval-steps 30000 \
+            --save-steps 7000 15000 30000 \
+            --ply-steps 7000 15000 30000 \
             --save-ply \
-            --disable-viewer
+            --disable-viewer \
+            --tb-every 1000
 
         # 결과 복사 (VGGT sparse도 함께)
         cp -r "$TEMP_WORK_DIR/sparse" "$RESULT_DIR/vggt_sparse"
