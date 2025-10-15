@@ -221,6 +221,9 @@ DURATION=$((END_TIME - START_TIME))
 # 결과 분석 및 저장
 echo "📊 결과 분석 중..."
 
+# GPU 정보 동적으로 가져오기
+GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -1 || echo "Unknown GPU")
+
 # 메타데이터 생성
 cat > "$RESULT_DIR/metadata.json" << EOF
 {
@@ -235,28 +238,44 @@ cat > "$RESULT_DIR/metadata.json" << EOF
     "git_commit": "$(git rev-parse HEAD)",
     "system": {
         "hostname": "$(hostname)",
-        "gpu": "RTX 6000 Ada",
+        "gpu": "$GPU_NAME",
         "python_env": "vggt_env"
     }
 }
 EOF
 
 # 결과 분석 (pycolmap이 필요한 경우)
+# P2/P3 → sparse, P4 → vggt_sparse, P5 → vggt_ba_sparse 순서로 확인
+SPARSE_DIR=""
 if [ -f "$RESULT_DIR/sparse/points3D.bin" ]; then
+    SPARSE_DIR="$RESULT_DIR/sparse"
+elif [ -f "$RESULT_DIR/vggt_ba_sparse/points3D.bin" ]; then
+    SPARSE_DIR="$RESULT_DIR/vggt_ba_sparse"
+elif [ -f "$RESULT_DIR/vggt_sparse/points3D.bin" ]; then
+    SPARSE_DIR="$RESULT_DIR/vggt_sparse"
+fi
+
+if [ -n "$SPARSE_DIR" ]; then
     source ./env/vggt_env/bin/activate
     python -c "
 import pycolmap
 import json
 import os
 
+sparse_dir = '$SPARSE_DIR'
 result_dir = '$RESULT_DIR'
-reconstruction = pycolmap.Reconstruction(os.path.join(result_dir, 'sparse'))
+reconstruction = pycolmap.Reconstruction(sparse_dir)
+
+# PLY 파일 경로 찾기
+ply_path = os.path.join(sparse_dir, 'points.ply')
+ply_size_mb = round(os.path.getsize(ply_path) / (1024*1024), 2) if os.path.exists(ply_path) else 0
 
 results = {
     'images_count': len(reconstruction.images),
     'points3D_count': len(reconstruction.points3D),
     'cameras_count': len(reconstruction.cameras),
-    'ply_file_size_mb': round(os.path.getsize(os.path.join(result_dir, 'sparse/points.ply')) / (1024*1024), 2)
+    'ply_file_size_mb': ply_size_mb,
+    'sparse_reconstruction_dir': os.path.basename(sparse_dir)
 }
 
 with open(os.path.join(result_dir, 'analysis.json'), 'w') as f:
@@ -264,6 +283,7 @@ with open(os.path.join(result_dir, 'analysis.json'), 'w') as f:
 
 print(f'✅ {results[\"points3D_count\"]:,} 3D points generated')
 print(f'📁 PLY file: {results[\"ply_file_size_mb\"]} MB')
+print(f'📂 Sparse dir: {results[\"sparse_reconstruction_dir\"]}')
 "
 fi
 
