@@ -1,17 +1,53 @@
 # 🔧 VGGT + Gaussian Splatting 호환성 환경 가이드
 
-## VGGT, Gaussian Splatting Git
-VGGT: https://github.com/facebookresearch/vggt.git
-gsplat: https://github.com/nerfstudio-project/gsplat.git
+**H100 GPU 환경 기준 (CUDA 12.1)**
 
-## 가이드
-1. 시작시 VGGT, gsplat git clone 확인
-2. 버전 확인 없으면 설치
+**Last Updated**: 2025-10-07
+**Validated Environment**: H100 80GB + CUDA 12.1 + Ubuntu 22.04
 
-## 요구사항
-VGGT Paper 및 readme 를 참고로 VGGT + BA + gsplat를 활용하여 image를 빠르고, 고품질 3D Reconstruction한다.
+---
 
-## ⚠️ 버전 충돌 분석 및 해결
+## 🚀 빠른 시작 (Recommended)
+
+**가장 쉬운 방법**: 자동 환경 설치 스크립트 사용
+
+```bash
+# 프로젝트 clone
+git clone https://github.com/Jihunkim95/vggt-gaussian-splatting-research.git
+cd vggt-gaussian-splatting-research
+
+# One-command setup (15-20분)
+./setup_environment.sh
+```
+
+**setup_environment.sh가 자동으로 설치하는 것들:**
+- ✅ COLMAP 3.7 (apt-get)
+- ✅ CUDA Toolkit 12.1 (/opt/cuda-12.1)
+- ✅ vggt_env (PyTorch 2.8.0, pycolmap 3.10.0)
+- ✅ gsplat_env (PyTorch 2.3.1+cu121, gsplat 1.5.3)
+- ✅ H100 환경변수 (TORCH_CUDA_ARCH_LIST=9.0)
+
+---
+
+## 📋 시스템 요구사항
+
+### 필수 요구사항
+```yaml
+GPU: H100 (80GB VRAM) - Compute Capability 9.0
+CUDA: 12.1+
+Python: 3.10+
+OS: Ubuntu 22.04+
+Sudo Access: 필수 (COLMAP, CUDA Toolkit 설치용)
+```
+
+### 권장 사양
+- **Storage**: 50GB+ (datasets + results)
+- **RAM**: 32GB+
+- **Internet**: 안정적인 연결 (패키지 다운로드)
+
+---
+
+## ⚠️ 주요 호환성 이슈 및 해결
 
 이 가이드는 **PyTorch, CUDA, 기타 라이브러리 간의 버전 충돌**을 해결하고 **완벽하게 호환되는 환경**을 구축하는 방법을 제공합니다.
 
@@ -35,14 +71,15 @@ VGGT Paper 및 readme 를 참고로 VGGT + BA + gsplat를 활용하여 image를 
 ✅ 해결: numpy<2.0.0 고정 사용
 ```
 
-## 🎯 검증된 완벽 호환 환경 (2025-09-17 기준 - 실제 구축됨)
+## 🎯 검증된 완벽 호환 환경 (2025-10-07 기준 - H100 검증 완료)
 
 ### 🖥️ 시스템 환경
 ```
-OS: Ubuntu 22.04+ LTS
+GPU: H100 80GB (Compute Capability 9.0)
+OS: Ubuntu 22.04 LTS
 Python: 3.10+
-CUDA: 12.1+ / 12.8+
-GCC: 9.3+ (PyTorch 빌드 호환)
+CUDA: 12.1 (Toolkit installed via setup_environment.sh)
+COLMAP: 3.7 (installed via apt-get)
 ```
 
 ### 📦 환경별 분리 구성 (실제 설치된 버전)
@@ -158,13 +195,27 @@ nvidia-cuda-runtime-cu12==12.1.105
 
 ## 🛡️ 환경 구축 단계별 가이드
 
-### 1️⃣ **환경별 분리 설치 방법 (권장)**
+### 방법 1: 자동 설치 (권장) ⭐
+
+```bash
+./setup_environment.sh
+```
+
+**장점:**
+- 모든 의존성 자동 설치
+- H100 환경변수 자동 설정
+- 에러 처리 및 검증 포함
+- 15-20분 소요
+
+---
+
+### 방법 2: 수동 설치 (고급 사용자)
 
 #### VGGT 환경 구축
 ```bash
 # VGGT 전용 가상환경 생성
-python -m venv /data/vggt-gaussian-splatting-research/env/vggt_env
-source /data/vggt-gaussian-splatting-research/env/vggt_env/bin/activate
+python -m venv ./env/vggt_env
+source ./env/vggt_env/bin/activate
 
 # PyTorch 생태계 (최신 안정 버전)
 pip install torch==2.8.0 torchvision==0.23.0
@@ -193,11 +244,16 @@ pip install matplotlib==3.10.6 tqdm==4.67.1 requests==2.32.5 PyYAML==6.0.2
 #### gsplat 환경 구축
 ```bash
 # gsplat 전용 가상환경 생성
-python -m venv /data/vggt-gaussian-splatting-research/env/gsplat_env
-source /data/vggt-gaussian-splatting-research/env/gsplat_env/bin/activate
+python -m venv ./env/gsplat_env
+source ./env/gsplat_env/bin/activate
+
+# H100 환경변수 설정 (중요!)
+export TORCH_CUDA_ARCH_LIST="9.0"
+export CUDA_HOME=/opt/cuda-12.1
+export PATH=/opt/cuda-12.1/bin:$PATH
 
 # PyTorch (CUDA 12.1 호환)
-pip install torch==2.3.1+cu121 torchvision==0.18.1 --index-url https://download.pytorch.org/whl/cu121
+pip install torch==2.3.1 torchvision==0.18.1 --index-url https://download.pytorch.org/whl/cu121
 
 # 핵심 Gaussian Splatting
 pip install gsplat==1.5.3 torchmetrics==1.8.2
@@ -218,11 +274,45 @@ pip install trimesh==4.8.1 manifold3d==3.2.1 shapely==2.1.1
 pip install git+https://github.com/nerfstudio-project/nerfview@4538024fe0d15fd1a0e4d760f3695fc44ca72787
 pip install viser==1.0.10
 
+# 이미지 처리 (headless - libGL.so.1 문제 해결)
+pip uninstall -y opencv-python
+pip install opencv-python-headless==4.12.0.88
+pip install pillow==11.3.0 imageio==2.37.0 scikit-image==0.25.2
+
+# 3D 처리 & 메쉬
+pip install trimesh==4.8.1 manifold3d==3.2.1 shapely==2.1.1
+
+# NeRF 뷰어
+pip install git+https://github.com/nerfstudio-project/nerfview@4538024fe0d15fd1a0e4d760f3695fc44ca72787
+pip install viser==1.0.10
+
 # 신경 렌더링 메트릭
-pip install fused-ssim==0.0.0 lpips==0.1.4
+pip install --no-build-isolation "git+https://github.com/rahul-goel/fused-ssim@328dc9836f513d00c4b5bc38fe30478b4435cbb5"
+pip install lpips==0.1.4
 
 # CLI & 유틸리티
 pip install tyro==0.9.31 rich==14.1.0 colorlog==6.9.0 tensorboard==2.20.0
+```
+
+#### COLMAP 설치
+```bash
+# System package (sudo 필요)
+sudo apt-get update
+sudo apt-get install -y colmap
+
+# 버전 확인
+colmap -h | head -5
+```
+
+#### CUDA Toolkit 12.1 설치
+```bash
+# fused-ssim 컴파일용 (선택사항, setup_environment.sh가 자동 설치)
+wget https://developer.download.nvidia.com/compute/cuda/12.1.0/local_installers/cuda_12.1.0_530.30.02_linux.run
+sudo sh cuda_12.1.0_530.30.02_linux.run --silent --toolkit --toolkitpath=/opt/cuda-12.1
+
+# 환경변수
+export CUDA_HOME=/opt/cuda-12.1
+export PATH=/opt/cuda-12.1/bin:$PATH
 ```
 
 ### 2️⃣ **호환성 검증 스크립트**
@@ -405,18 +495,26 @@ if __name__ == "__main__":
     main()
 ```
 
-### 3️⃣ **환경별 분리 설치 (고급)**
+---
+
+## 🌟 H100 환경 특화 설정
+
+### H100 환경변수 (필수)
 
 ```bash
-# === 표준화된 방법 (권장) ===
-# pycolmap==3.10.0로 통일 (VGGT, gsplat 모두 호환)
-pip install pycolmap==3.10.0
+# env/setup_h100.sh 사용
+source env/setup_h100.sh
 
-# === 분리된 환경 전략 ===
-# VGGT 환경: /workspace/envs/vggt_env
-# gsplat 환경: /workspace/envs/gsplat_env
-# 두 환경 모두 pycolmap==3.10.0 사용
+# 또는 수동 설정
+export TORCH_CUDA_ARCH_LIST="9.0"  # H100 compute capability
+export CUDA_HOME=/opt/cuda-12.1
+export PATH=/opt/cuda-12.1/bin:$PATH
+export LD_LIBRARY_PATH=/opt/cuda-12.1/lib64:$LD_LIBRARY_PATH
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+export TMPDIR=/data/tmp
 ```
+
+**중요**: `TORCH_CUDA_ARCH_LIST="9.0"`을 설정하지 않으면 gsplat CUDA 커널이 H100에서 실행되지 않습니다!
 
 ## 📊 메모리 최적화 설정
 
@@ -460,7 +558,32 @@ pip install torch==2.3.1+cu121 torchvision==0.18.1+cu121 --no-deps --force-reins
 # pycolmap 재설치
 pip uninstall pycolmap -y
 pip cache purge
-pip install pycolmap==0.6.1 --no-cache-dir
+pip install pycolmap==3.10.0 --no-cache-dir  # vggt_env
+# 또는
+pip install git+https://github.com/rmbrualla/pycolmap@cc7ea4b7301720ac29287dbe450952511b32125e  # gsplat_env
+```
+
+### **문제 5: "CUDA error: no kernel image available"**
+```bash
+# H100 환경변수 누락
+source env/setup_h100.sh
+
+# 또는 수동 설정
+export TORCH_CUDA_ARCH_LIST="9.0"
+export CUDA_HOME=/opt/cuda-12.1
+
+# gsplat CUDA extension 재컴파일
+rm -rf /root/.cache/torch_extensions
+rm -rf /tmp/torch_extensions
+```
+
+### **문제 6: "colmap: not found"**
+```bash
+# COLMAP 설치
+sudo apt-get install -y colmap
+
+# 또는 setup_environment.sh 재실행
+./setup_environment.sh
 ```
 
 ### **문제 4: "NumPy version conflict"**
@@ -498,8 +621,8 @@ print('🎉 완벽한 호환 환경 구축 완료!')
 ### requirements_vggt_env.txt (실제 버전)
 ```txt
 # VGGT Environment Requirements
-# Successfully tested on RTX 6000 Ada (48GB VRAM)
-# Generated from working vggt_env on 2025-09-17
+# Successfully validated on H100 80GB
+# Generated from working vggt_env on 2025-10-07
 
 # Core Deep Learning Framework
 torch==2.8.0
@@ -552,8 +675,9 @@ triton==3.4.0
 ### requirements_gsplat_env.txt (실제 버전)
 ```txt
 # gsplat_env Requirements
-# Generated for P1 COLMAP SfM + gsplat pipeline
-# Date: 2025-09-17
+# H100 GPU optimized (TORCH_CUDA_ARCH_LIST=9.0)
+# Successfully validated on H100 80GB
+# Date: 2025-10-07
 
 # Core ML/DL frameworks
 torch==2.3.1+cu121
@@ -618,4 +742,25 @@ PyYAML==6.0.2
 
 ---
 
-**🛡️ 이 가이드를 따르면 RTX A5000/6000 Ada 어떤 환경에서도 충돌 없는 완벽한 VGGT + BA + Gaussian Splatting 파이프라인이 구축됩니다!**
+## 📚 추가 자료 (Additional Resources)
+
+### 워크플로우 문서
+- **[20251007_VGGT-GSplat_WorkFlow.md](docs/workflows/20251007_VGGT-GSplat_WorkFlow.md)** - P1 구현, DTU 각도 정렬
+- **[20251006_VGGT-GSplat_WorkFlow.md](docs/workflows/20251006_VGGT-GSplat_WorkFlow.md)** - H100 호환성 해결
+
+### 가이드 문서
+- **[QUICK_START_GUIDE.md](./QUICK_START_GUIDE.md)** - H100 환경 Quick Start
+- **[README.md](./README.md)** - 프로젝트 개요
+- **[RESEARCH_STATUS.md](./RESEARCH_STATUS.md)** - 연구 진행 상황
+
+### 핵심 스크립트
+- **[setup_environment.sh](./setup_environment.sh)** - 자동 환경 설치
+- **[run_pipeline.sh](./run_pipeline.sh)** - 파이프라인 실행기
+- **[prepare_standard_dataset.sh](./prepare_standard_dataset.sh)** - 데이터셋 준비
+
+---
+
+**🛡️ 이 가이드를 따르면 H100 환경에서 충돌 없는 완벽한 VGGT + BA + Gaussian Splatting 파이프라인이 구축됩니다!**
+
+**Last Updated**: 2025-10-07
+**Validated on**: H100 80GB + CUDA 12.1 + Ubuntu 22.04

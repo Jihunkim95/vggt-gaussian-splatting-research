@@ -296,7 +296,8 @@ def deployment_readiness_score(pipeline_result):
 ---
 
 ## 5. **데이터셋 전략**
-
+학습된 데이터 = Co3Dv2, BlendMVS, DL3DV, MegaDepth, Kubric, WildRGB, ScanNet, HyperSim, Mapillary, Habitat, Replica, MVS-Synth, PointOdyssey, Virtual KITTI, Aria Synthetic Environments, Aria Digital Twin, Objaverse
+학습안된 데이터(테스트용) = DTU
 ### 5.1 **Standard + Challenge Sets**
 ```python
 dataset_strategy = {
