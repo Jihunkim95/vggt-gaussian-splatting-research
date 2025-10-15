@@ -13,7 +13,7 @@ run_pipeline.sh P1 파이프라인과 동일한 동작
           --output-dir ./results/P1_baseline \
           --data-factor 1 \
           --max-steps 30000 \
-          --eval-steps 30000 \
+          --eval-steps 7000 15000 30000 \
           --save-steps 7000 15000 30000 \
           --ply-steps 7000 15000 30000 \
           --save-ply \
@@ -289,7 +289,7 @@ def run_colmap_sfm(data_path, sparse_dir):
         return True  # Continue anyway if files exist
 
 def run_p1_baseline(data_dir, output_dir, data_factor=1, max_steps=30000,
-                   eval_steps=30000, save_steps=None, ply_steps=None,
+                   eval_steps=None, save_steps=None, ply_steps=None,
                    save_ply=True, disable_viewer=True, tb_every=1000):
     """
     Run P1 Baseline: Original COLMAP SfM + gsplat (Images Only)
@@ -300,7 +300,7 @@ def run_p1_baseline(data_dir, output_dir, data_factor=1, max_steps=30000,
         output_dir: Output directory for results
         data_factor: Data downsampling factor
         max_steps: Maximum training steps
-        eval_steps: Evaluation steps
+        eval_steps: List of steps to evaluate (default: [7000, 15000, 30000])
         save_steps: List of steps to save checkpoints
         ply_steps: List of steps to save PLY files
         save_ply: Save PLY files
@@ -361,7 +361,9 @@ def run_p1_baseline(data_dir, output_dir, data_factor=1, max_steps=30000,
 
     print(f"✅ COLMAP SfM 완료! ({colmap_elapsed:.1f}초)")
 
-    # Default save/ply steps if not provided
+    # Default eval/save/ply steps if not provided
+    if eval_steps is None:
+        eval_steps = [7000, 15000, 30000]
     if save_steps is None:
         save_steps = [7000, 15000, 30000]
     if ply_steps is None:
@@ -377,6 +379,7 @@ def run_p1_baseline(data_dir, output_dir, data_factor=1, max_steps=30000,
     print(f"📝 Using gsplat script: {gsplat_script}")
 
     # Build training command (matching run_pipeline.sh P1 section)
+    eval_steps_str = " ".join(map(str, eval_steps))
     save_steps_str = " ".join(map(str, save_steps))
     ply_steps_str = " ".join(map(str, ply_steps))
 
@@ -385,7 +388,7 @@ def run_p1_baseline(data_dir, output_dir, data_factor=1, max_steps=30000,
         --result-dir {output_path} \\
         --data-factor {data_factor} \\
         --max-steps {max_steps} \\
-        --eval-steps {eval_steps} \\
+        --eval-steps {eval_steps_str} \\
         --save-steps {save_steps_str} \\
         --ply-steps {ply_steps_str}"""
 
@@ -400,7 +403,8 @@ def run_p1_baseline(data_dir, output_dir, data_factor=1, max_steps=30000,
     training_start_time = time.time()
 
     print(f"\n🚀 P1 Baseline 훈련 시작 (COLMAP SfM + gsplat)")
-    print(f"📊 Step 저장: {save_steps}")
+    print(f"📊 평가 스텝: {eval_steps}")
+    print(f"📊 체크포인트 저장: {save_steps}")
     print(f"📊 PLY 저장: {ply_steps}")
     print(f"📊 TensorBoard 로깅: 매 {tb_every} steps")
 
@@ -459,8 +463,8 @@ def main():
                       help="Data downsampling factor")
     parser.add_argument("--max-steps", type=int, default=30000,
                       help="Maximum training steps")
-    parser.add_argument("--eval-steps", type=int, default=30000,
-                      help="Evaluation steps")
+    parser.add_argument("--eval-steps", type=int, nargs='+', default=[7000, 15000, 30000],
+                      help="Evaluation steps (space-separated)")
     parser.add_argument("--save-steps", type=int, nargs='+', default=[7000, 15000, 30000],
                       help="Steps to save checkpoints (space-separated)")
     parser.add_argument("--ply-steps", type=int, nargs='+', default=[7000, 15000, 30000],

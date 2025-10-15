@@ -86,7 +86,7 @@ case "$PIPELINE" in
             --output-dir "$RESULT_DIR" \
             --data-factor 1 \
             --max-steps 30000 \
-            --eval-steps 30000 \
+            --eval-steps 7000 15000 30000 \
             --save-steps 7000 15000 30000 \
             --ply-steps 7000 15000 30000 \
             --save-ply \
@@ -151,7 +151,7 @@ case "$PIPELINE" in
             --result-dir "$RESULT_DIR" \
             --data-factor 1 \
             --max-steps 30000 \
-            --eval-steps 30000 \
+            --eval-steps 7000 15000 30000 \
             --save-steps 7000 15000 30000 \
             --ply-steps 7000 15000 30000 \
             --save-ply \
@@ -197,7 +197,7 @@ case "$PIPELINE" in
             --result-dir "$RESULT_DIR" \
             --data-factor 1 \
             --max-steps 30000 \
-            --eval-steps 30000 \
+            --eval-steps 7000 15000 30000 \
             --save-steps 7000 15000 30000 \
             --ply-steps 7000 15000 30000 \
             --save-ply \
