@@ -302,15 +302,16 @@ Please note that only this [model checkpoint](https://huggingface.co/facebook/VG
 
 ## 🚀 **VGGT-Gaussian Splatting Research Extension**
 
-**RTX 6000 Ada optimization** for VGGT+3DGS pipeline research project targeting **WACV 2026**.
+**H100 GPU optimization** for VGGT+3DGS pipeline research project targeting **WACV 2026**.
 
 ### **📊 Research Extension Overview**
-This research extends the original VGGT for **practical deployment on RTX 6000 Ada GPUs** (48GB VRAM), featuring:
+This research extends the original VGGT for **practical deployment on H100 GPUs** (80GB VRAM), featuring:
 
 - **🎯 Pipeline Comparison**: 5 different configurations (P1-P5)
-- **⚡ Memory Optimization**: Efficient VRAM utilization for RTX 6000 Ada
+- **⚡ Memory Optimization**: Efficient VRAM utilization for H100
 - **🔬 Scalability**: 60-80 frame processing optimization
 - **📈 Performance Analysis**: Speed vs Quality trade-offs
+- **🚀 Automated Setup**: One-command environment installation
 
 ## 📁 Repository Structure
 
@@ -336,27 +337,45 @@ git clone https://github.com/Jihunkim95/vggt-gaussian-splatting-research.git
 cd vggt-gaussian-splatting-research
 ```
 
-### 2. Setup External Libraries
+### 2. Automated Environment Setup (H100 GPU)
 ```bash
-./setup_libs.sh
+# One-command setup: Installs COLMAP, CUDA Toolkit, vggt_env, gsplat_env
+./setup_environment.sh
 ```
 
-### 3. Environment Setup
+**This script automatically installs:**
+- ✅ COLMAP 3.7 (SfM baseline)
+- ✅ CUDA Toolkit 12.1 (for fused-ssim compilation)
+- ✅ vggt_env (PyTorch 2.8.0, pycolmap 3.10.0)
+- ✅ gsplat_env (PyTorch 2.3.1+cu121, gsplat 1.5.3)
+- ✅ H100 environment variables (TORCH_CUDA_ARCH_LIST=9.0)
+
+### 3. Prepare Dataset
 ```bash
-source scripts/utils/switch_env.sh
+# Download DTU (example: scan1)
+mkdir -p ./datasets/DTU
+# [Download DTU dataset to ./datasets/DTU/Rectified/scan1_train]
+
+# Prepare standardized dataset (60 images, angle-sorted for COLMAP)
+./prepare_standard_dataset.sh ./datasets/DTU/Rectified/scan1_train
 ```
 
-### 4. Restore Context
+### 4. Run Pipeline
 ```bash
-./scripts/utils/context_restore.sh
+# P1 Baseline: COLMAP SfM + gsplat (47 min)
+./run_pipeline.sh P1 ./datasets/DTU/scan1_standard
+
+# P5 Full: VGGT + BA + gsplat (15 min)
+./run_pipeline.sh P5 ./datasets/DTU/scan1_standard
 ```
 
 ## 🔧 Environment Requirements
 
-- **GPU**: RTX 6000 Ada (48GB VRAM) or equivalent
-- **CUDA**: 11.8+ or 12.x
+- **GPU**: H100 (80GB VRAM) - Compute Capability 9.0
+- **CUDA**: 12.1+ (installed by setup_environment.sh)
 - **Python**: 3.10+
-- **Libraries**: VGGT, gsplat, PyTorch
+- **System**: Ubuntu 22.04+, sudo access for COLMAP/CUDA installation
+- **Libraries**: VGGT, gsplat, PyTorch (auto-installed)
 
 ## 🧪 Pipeline Configurations
 
@@ -371,16 +390,19 @@ source scripts/utils/switch_env.sh
 ## 📈 Current Status
 
 ### ✅ Completed
-- [x] Environment setup and separation (vggt_env + gsplat_env)
-- [x] pycolmap version standardization (0.6.1)
-- [x] Frame target adjustment (80 frames realistic max)
-- [x] Research plan documentation (20250903)
+- [x] H100 GPU environment setup (TORCH_CUDA_ARCH_LIST=9.0)
+- [x] Automated setup script (setup_environment.sh)
+- [x] COLMAP 3.7 integration
+- [x] P1 Baseline pipeline (COLMAP SfM + gsplat)
+- [x] P5 Full pipeline (VGGT + BA + gsplat)
+- [x] DTU angle-sorted dataset preparation
+- [x] CO3Dv2 dataset support (PNG/JPG auto-detection)
+- [x] Environment separation (vggt_env + gsplat_env)
 
-### 🔄 In Progress  
-- [ ] DTU dataset download and preprocessing
-- [ ] P1-P5 pipeline implementation
-- [ ] VGGT integration with gsplat
-- [ ] Memory optimization for 80 frames
+### 🔄 In Progress
+- [ ] P2/P3/P4 pipeline validation
+- [ ] Multi-dataset benchmarking (DTU, CO3Dv2, Custom)
+- [ ] Quantitative comparison (P1 vs P4 vs P5)
 
 ### 🎯 Target Metrics
 - **Quality**: PSNR, SSIM, LPIPS, Chamfer Distance
@@ -389,20 +411,28 @@ source scripts/utils/switch_env.sh
 
 ## 📊 Experimental Results
 
-Currently targeting **80 frames** (RTX 6000 Ada realistic maximum). Research focus: Memory optimization and pipeline comparison.
+H100 GPU (80GB VRAM) validated results:
 
-| Dataset | Frames | VRAM (GB) | Processing Time | PSNR | Status |
-|---------|--------|-----------|----------------|------|--------|
-| DTU scan24 | 80 | TBD | TBD | TBD | 🔄 Planned |
-| DTU scan37 | 80 | TBD | TBD | TBD | 🔄 Planned |
-| ETH3D courtyard | 80 | TBD | TBD | TBD | 🔄 Planned |
+| Pipeline | Dataset | Frames | VRAM (GB) | Time (min) | PSNR | SSIM | Status |
+|----------|---------|--------|-----------|------------|------|------|--------|
+| **P1** | CO3Dv2 apple | 60 | ~2.5 | 13.8 | - | - | ✅ Validated |
+| **P1** | DTU scan14 | 60 | ~2.5 | 22.8 | - | - | ✅ Validated |
+| **P5** | DTU scan24 | 60 | ~20 | 13.2 | 16.06 | 0.741 | ✅ Validated |
+
+**Key Findings:**
+- ✅ H100 CUDA arch 9.0 support confirmed
+- ✅ COLMAP angle-sorted DTU: 100% registration
+- ✅ CO3Dv2 video frames: Perfect for COLMAP (100% registration)
+- ✅ P5 memory efficient: 2.43GB/80GB (3% utilization)
 
 ## 🔍 Key Scripts
 
+- **`setup_environment.sh`**: One-command H100 environment setup (NEW!)
+- **`run_pipeline.sh`**: Unified pipeline runner (P1/P4/P5)
+- **`prepare_standard_dataset.sh`**: Dataset preparation (DTU angle sorting, JPG support)
+- **`p1_baseline.py`**: COLMAP SfM + gsplat baseline
 - **`scripts/export/export_ply.py`**: Extract PLY models from checkpoints
-- **`scripts/utils/context_restore.sh`**: Quick project status overview
-- **`scripts/utils/switch_env.sh`**: Environment management
-- **`setup_libs.sh`**: Clone and setup external dependencies
+- **`env/setup_h100.sh`**: H100 environment variables
 
 ## 📚 Documentation
 
@@ -456,4 +486,4 @@ Research project - please cite if used in publications.
 - **📖 Detailed Instructions**: [`PIPELINE_EXECUTION_GUIDE.md`](./PIPELINE_EXECUTION_GUIDE.md) - Pipeline-specific details
 
 **Research Extension Maintainer**: [@Jihunkim95](https://github.com/Jihunkim95)
-**Last Updated**: 2025-09-17
+**Last Updated**: 2025-10-07 (H100 환경 검증 완료)
