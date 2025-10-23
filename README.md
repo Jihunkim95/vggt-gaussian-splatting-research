@@ -317,16 +317,22 @@ This research extends the original VGGT for **practical deployment on H100 GPUs*
 
 ```
 ├── docs/                    # Research documentation
-│   ├── archive/            # Archived old documents
-│   └── EXPERIMENT_LOG.md   # Experiment tracking
-├── scripts/                # Utilities and tools
-│   ├── export/             # PLY model extraction
-│   └── utils/              # Context restoration & environment
-├── datasets/               # Experimental datasets
-│   └── DTU/                # DTU dataset (scan24, scan37, etc.)
-├── libs/                   # External libraries (VGGT, gsplat)
-├── setup_libs.sh          # External library setup
-└── .gitignore             # Optimized for large ML projects
+│   ├── ARCHITECTURE.md      # Pipeline architecture (P1-P5)
+│   ├── ENVIRONMENT_SETUP.md # H100 environment setup guide
+│   ├── TOOLS_REFERENCE.md   # All scripts usage reference
+│   ├── workflows/           # Daily research logs (2025-09-08 ~ 2025-10-23)
+│   └── archive/             # Archived old documents
+├── scripts/                 # Utilities and tools
+│   ├── export/              # PLY model extraction
+│   └── utils/               # Context restoration & environment
+├── datasets/                # Experimental datasets
+│   └── DTU/                 # DTU dataset (scan1, scan14, scan24, etc.)
+├── libs/                    # External libraries (VGGT, gsplat)
+├── setup_environment.sh     # One-command H100 setup
+├── run_pipeline.sh          # Pipeline runner (P1-P5)
+├── prepare_standard_dataset.sh  # Dataset preparation
+├── extract_frames.sh        # Video → 60 frames extraction
+└── .gitignore               # Optimized for large ML projects
 ```
 
 ## 🛠️ Quick Start
@@ -351,6 +357,8 @@ cd vggt-gaussian-splatting-research
 - ✅ H100 environment variables (TORCH_CUDA_ARCH_LIST=9.0)
 
 ### 3. Prepare Dataset
+
+**Option A: From DTU Dataset**
 ```bash
 # Download DTU (example: scan1)
 mkdir -p ./datasets/DTU
@@ -360,12 +368,21 @@ mkdir -p ./datasets/DTU
 ./prepare_standard_dataset.sh ./datasets/DTU/Rectified/scan1_train
 ```
 
+**Option B: From Video**
+```bash
+# Extract 60 frames from video
+./extract_frames.sh recording.mp4 ./datasets/my_scene
+```
+
 ### 4. Run Pipeline
 ```bash
-# P1 Baseline: COLMAP SfM + gsplat (47 min)
+# P1 Baseline: COLMAP SfM + gsplat (15-25 min)
 ./run_pipeline.sh P1 ./datasets/DTU/scan1_standard
 
-# P5 Full: VGGT + BA + gsplat (15 min)
+# P4 Balanced: VGGT + gsplat (8-10 min)
+./run_pipeline.sh P4 ./datasets/DTU/scan1_standard
+
+# P5 Full: VGGT + BA + gsplat (13 min)
 ./run_pipeline.sh P5 ./datasets/DTU/scan1_standard
 ```
 
@@ -394,13 +411,15 @@ mkdir -p ./datasets/DTU
 - [x] Automated setup script (setup_environment.sh)
 - [x] COLMAP 3.7 integration
 - [x] P1 Baseline pipeline (COLMAP SfM + gsplat)
+- [x] P4 Balanced pipeline (VGGT + gsplat, no BA)
 - [x] P5 Full pipeline (VGGT + BA + gsplat)
 - [x] DTU angle-sorted dataset preparation
 - [x] CO3Dv2 dataset support (PNG/JPG auto-detection)
 - [x] Environment separation (vggt_env + gsplat_env)
+- [x] Video frame extraction (extract_frames.sh)
 
 ### 🔄 In Progress
-- [ ] P2/P3/P4 pipeline validation
+- [ ] P2/P3 pipeline validation
 - [ ] Multi-dataset benchmarking (DTU, CO3Dv2, Custom)
 - [ ] Quantitative comparison (P1 vs P4 vs P5)
 
@@ -417,6 +436,7 @@ H100 GPU (80GB VRAM) validated results:
 |----------|---------|--------|-----------|------------|------|------|--------|
 | **P1** | CO3Dv2 apple | 60 | ~2.5 | 13.8 | - | - | ✅ Validated |
 | **P1** | DTU scan14 | 60 | ~2.5 | 22.8 | - | - | ✅ Validated |
+| **P4** | DTU scan14 | 60 | ~2.6 | 8.0 | 19.27 | 0.727 | ✅ Validated |
 | **P5** | DTU scan24 | 60 | ~20 | 13.2 | 16.06 | 0.741 | ✅ Validated |
 
 **Key Findings:**
@@ -427,18 +447,20 @@ H100 GPU (80GB VRAM) validated results:
 
 ## 🔍 Key Scripts
 
-- **`setup_environment.sh`**: One-command H100 environment setup (NEW!)
-- **`run_pipeline.sh`**: Unified pipeline runner (P1/P4/P5)
-- **`prepare_standard_dataset.sh`**: Dataset preparation (DTU angle sorting, JPG support)
+- **`setup_environment.sh`**: One-command H100 environment setup
+- **`run_pipeline.sh`**: Unified pipeline runner (P1-P5)
+- **`prepare_standard_dataset.sh`**: Dataset preparation (60 frames, angle sorting)
+- **`extract_frames.sh`**: Video → 60 frames extraction
 - **`p1_baseline.py`**: COLMAP SfM + gsplat baseline
 - **`scripts/export/export_ply.py`**: Extract PLY models from checkpoints
 - **`env/setup_h100.sh`**: H100 environment variables
 
 ## 📚 Documentation
 
-- **[Research Workflow](docs/workflows/)**: Detailed research plans and progress
-- **[VRAM Analysis](docs/analysis/)**: Memory optimization strategies  
-- **[Experiment Log](docs/EXPERIMENT_LOG.md)**: Tracking all experiments
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**: Complete pipeline architecture (P1-P5)
+- **[ENVIRONMENT_SETUP.md](docs/ENVIRONMENT_SETUP.md)**: H100 environment setup guide
+- **[TOOLS_REFERENCE.md](docs/TOOLS_REFERENCE.md)**: All scripts usage reference
+- **[Research Workflows](docs/workflows/)**: Daily research logs (2025-09-08 ~ 2025-10-23)
 
 ## 🤝 Contributing
 
@@ -481,9 +503,10 @@ Research project - please cite if used in publications.
 ---
 
 ### **📚 Quick Start Documentation**
-- **🚀 Complete Guide**: [`QUICK_START_GUIDE.md`](./QUICK_START_GUIDE.md) - Full setup from DTU download to P1-P5 execution
-- **⚡ Pipeline Execution**: [`run_pipeline.sh`](./run_pipeline.sh) - Automated P1/P2/P3 runner
-- **📖 Detailed Instructions**: [`PIPELINE_EXECUTION_GUIDE.md`](./PIPELINE_EXECUTION_GUIDE.md) - Pipeline-specific details
+- **🚀 Complete Guide**: [`QUICK_START_GUIDE.md`](./QUICK_START_GUIDE.md) - Full setup from environment to P1-P5 execution
+- **🏗️ Architecture**: [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) - Pipeline architecture (P1-P5)
+- **🔧 Environment**: [`docs/ENVIRONMENT_SETUP.md`](./docs/ENVIRONMENT_SETUP.md) - H100 setup guide
+- **📖 Tools Reference**: [`docs/TOOLS_REFERENCE.md`](./docs/TOOLS_REFERENCE.md) - All scripts usage
 
 **Research Extension Maintainer**: [@Jihunkim95](https://github.com/Jihunkim95)
-**Last Updated**: 2025-10-07 (H100 환경 검증 완료)
+**Last Updated**: 2025-10-23 (P4 파이프라인 검증, extract_frames.sh 추가)

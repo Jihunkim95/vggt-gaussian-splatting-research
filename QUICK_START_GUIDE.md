@@ -2,7 +2,7 @@
 
 **처음부터 끝까지 한 번에!** - 환경 설치부터 P1-P5 파이프라인 실행까지
 
-**Last Updated**: 2025-10-07 | **Validated on**: H100 80GB
+**Last Updated**: 2025-10-23 | **Validated on**: H100 80GB
 
 ---
 
@@ -36,7 +36,7 @@ cd vggt-gaussian-splatting-research
 - ✅ **COLMAP 3.7** (127 packages, 166MB) - Structure-from-Motion
 - ✅ **CUDA Toolkit 12.1** (~3GB) - fused-ssim 컴파일용
 - ✅ **vggt_env** - VGGT 환경 (PyTorch 2.8.0, pycolmap 3.10.0)
-- ✅ **gsplat_env** - gsplat 환경 (PyTorch 2.3.1, gsplat 1.5.3)
+- ✅ **gsplat_env** - gsplat 환경 (PyTorch 2.3.1+cu121, gsplat 1.5.3)
 - ✅ **H100 환경변수** - TORCH_CUDA_ARCH_LIST=9.0
 
 **예상 소요 시간**: 15-20분 (인터넷 속도에 따라 다름)
@@ -82,6 +82,53 @@ ls ./scan1_train/*.png | wc -l
 cd /data/vggt-gaussian-splatting-research
 ```
 
+### **2.3 비디오에서 이미지 추출 (선택사항)**
+
+**동영상 파일이 있는 경우** 60개의 프레임을 자동으로 추출할 수 있습니다:
+
+```bash
+# 비디오에서 60개 프레임 균등 추출
+./extract_frames.sh video.mp4 ./datasets/my_scene
+```
+
+**출력 예시**:
+```
+==================================================
+🎬 Video Frame Extraction
+==================================================
+📹 Input video: video.mp4
+📁 Output directory: ./datasets/my_scene/images
+🖼️  Target frames: 60
+
+📊 Analyzing video...
+   Duration: 41.9s
+   Total frames: 1257
+   FPS: 30.0
+
+🔄 Extracting frames...
+✅ Extracted 60 frames
+📝 Renaming files...
+
+==================================================
+✅ Frame extraction completed!
+==================================================
+📁 Output: ./datasets/my_scene/images
+🖼️  Total frames: 60
+
+Next steps:
+  1. Run COLMAP (if needed):
+     colmap feature_extractor --image_path ./datasets/my_scene/images ...
+
+  2. Or run pipeline directly:
+     ./run_pipeline.sh P4 ./datasets/my_scene
+     ./run_pipeline.sh P5 ./datasets/my_scene
+==================================================
+```
+
+**지원 포맷**: MP4, MOV, AVI 등 모든 ffmpeg 호환 비디오
+
+**참고**: extract_frames.sh는 ffmpeg와 bc를 자동으로 설치합니다.
+
 ---
 
 ## 🎯 **3. 표준 데이터셋 준비** (H100 최적화)
@@ -123,7 +170,20 @@ cd /data/vggt-gaussian-splatting-research
 - 100% 카메라 등록 (각도 정렬 덕분)
 - H100: ~2.5GB VRAM, 15-25분 소요
 
-### **4.2 P5: VGGT + BA + gsplat (최고 품질)**
+### **4.2 P4: VGGT → gsplat (빠르고 균형잡힌)**
+```bash
+# VGGT Feed-Forward + gsplat (약 8-10분)
+./run_pipeline.sh P4 ./datasets/DTU/scan1_standard
+```
+
+**특징**:
+- VGGT로 빠른 초기 재구성 (Bundle Adjustment 없음)
+- gsplat 훈련 (30K steps)
+- H100: ~2.6GB VRAM, 8-10분 소요
+- PSNR: ~19 (scan14 기준), SSIM: ~0.73
+- **추천**: 빠른 프로토타이핑과 품질 균형이 필요할 때
+
+### **4.3 P5: VGGT + BA + gsplat (최고 품질)**
 ```bash
 # VGGT + Bundle Adjustment + gsplat (약 13분)
 ./run_pipeline.sh P5 ./datasets/DTU/scan1_standard
@@ -136,7 +196,7 @@ cd /data/vggt-gaussian-splatting-research
 - H100: ~20GB VRAM, 13분 소요
 - PSNR: ~16, SSIM: ~0.74
 
-### **4.3 병렬 실행 (권장)**
+### **4.4 병렬 실행 (권장)**
 ```bash
 # 여러 파이프라인 동시 실행 (H100 80GB VRAM 활용)
 ./run_pipeline.sh P1 ./datasets/DTU/scan1_standard &
@@ -183,11 +243,12 @@ cat ./results/P5_scan1_*/stats/val_step29999.json
 ls -lh ./results/*/ply/*.ply
 ```
 
-### **5.3 예상 결과 (DTU scan1)**
+### **5.3 예상 결과 (DTU scan1/scan14)**
 
 | 파이프라인 | 시간 (H100) | VRAM | Gaussians | PSNR | SSIM | 특징 |
 |-----------|------------|------|-----------|------|------|------|
 | **P1** | 15-25분 | ~2.5GB | ~1.5M | TBD | TBD | 전통 COLMAP |
+| **P4** | 8-10분 | ~2.6GB | ~1.5M | ~19 | ~0.73 | VGGT (no BA) |
 | **P5** | 13분 | ~20GB | ~1.5M | ~16 | ~0.74 | VGGT+BA |
 
 ---
@@ -270,18 +331,21 @@ rm -rf ./datasets/DTU/scan1_standard
 
 ## 📚 **참고 문서**
 
-### **워크플로우 문서**
-- **20251007_VGGT-GSplat_WorkFlow.md** - P1 구현 및 DTU 각도 정렬
-- **20251006_VGGT-GSplat_WorkFlow.md** - H100 호환성 해결
+### **주요 가이드**
+- **docs/ARCHITECTURE.md** - 파이프라인 아키텍처 (P1-P5 상세 설명)
+- **docs/ENVIRONMENT_SETUP.md** - 환경 설정 가이드 (H100 최적화)
+- **docs/TOOLS_REFERENCE.md** - 모든 스크립트 사용법 및 예제
 
-### **가이드 문서**
-- **PIPELINE_EXECUTION_GUIDE.md** - 파이프라인별 상세 설명
-- **Compatible_Environment_Guide.md** - 환경 호환성 가이드
+### **워크플로우 문서** (연구 일지)
+- **docs/workflows/20251007_VGGT-GSplat_WorkFlow.md** - P1 구현 및 DTU 각도 정렬
+- **docs/workflows/20251006_VGGT-GSplat_WorkFlow.md** - H100 호환성 해결
+- **docs/workflows/** - 기타 연구 일지 (2025-09-08 ~ 2025-10-07)
 
 ### **핵심 스크립트**
-- **setup_environment.sh** - 자동 환경 설정
-- **run_pipeline.sh** - 통합 파이프라인 실행기
-- **prepare_standard_dataset.sh** - 데이터셋 표준화
+- **setup_environment.sh** - 자동 환경 설정 (H100 지원)
+- **run_pipeline.sh** - 통합 파이프라인 실행기 (P1-P5)
+- **prepare_standard_dataset.sh** - 데이터셋 표준화 (60개 샘플링)
+- **extract_frames.sh** - 동영상 → 60개 프레임 추출
 
 ---
 
@@ -291,8 +355,10 @@ rm -rf ./datasets/DTU/scan1_standard
 |------|-----------|------|
 | **환경 설정** | 15-20분 | 최초 1회만 (COLMAP, CUDA, 가상환경) |
 | **DTU 다운로드** | 5-10분 | Google Drive gdown |
+| **비디오 프레임 추출** | 1-2분 | 60개 프레임 추출 (선택사항) |
 | **데이터셋 준비** | 1-2분 | 60개 샘플링 + 각도 정렬 |
 | **P1 실행** | 15-25분 | COLMAP + gsplat 30K |
+| **P4 실행** | 8-10분 | VGGT (no BA) + gsplat 30K |
 | **P5 실행** | 13분 | VGGT + BA + gsplat 30K |
 
 **총 소요시간 (처음 사용자)**: 약 45-60분
@@ -342,16 +408,24 @@ du -sh ./results/P*/ply/
        --p5 ./results/P5_scan1_*
    ```
 
-3. **커스텀 데이터셋**
+3. **커스텀 데이터셋 (이미지)**
    ```bash
    # 직접 촬영한 이미지로 실험
    ./prepare_standard_dataset.sh /path/to/your/images
    ./run_pipeline.sh P5 ./datasets/your_dataset_standard
    ```
 
+4. **비디오에서 3D 재구성**
+   ```bash
+   # 동영상 촬영 → 프레임 추출 → 3D 재구성
+   ./extract_frames.sh recording.mp4 ./datasets/my_room
+   ./run_pipeline.sh P4 ./datasets/my_room  # 빠른 실험
+   ./run_pipeline.sh P5 ./datasets/my_room  # 고품질
+   ```
+
 ---
 
 **🎉 축하합니다! VGGT-Gaussian Splatting 파이프라인 실행 완료!**
 
-**Last Updated**: 2025-10-07
+**Last Updated**: 2025-10-23
 **Validated Environment**: H100 80GB + CUDA 12.1 + Ubuntu 22.04

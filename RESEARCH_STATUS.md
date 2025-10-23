@@ -2,7 +2,7 @@
 
 **H100 GPU 환경 기반 연구 진행 상황**
 
-**Last Updated**: 2025-10-07
+**Last Updated**: 2025-10-23
 **Environment**: H100 80GB + CUDA 12.1 + Ubuntu 22.04
 
 ---
@@ -27,6 +27,12 @@
   - COLMAP 3-step SfM: Feature extraction, Matching, Sparse reconstruction
   - CPU fallback 지원 (OpenGL 에러 대응)
 
+- ✅ **P4 Balanced** (VGGT + gsplat, no BA)
+  - run_pipeline.sh 통합
+  - VGGT feed-forward 초기화 (빠른 처리)
+  - Bundle Adjustment 없이 gsplat 직접 훈련
+  - 처리 시간: ~8분 (P1보다 2-3배 빠름)
+
 - ✅ **P5 Full** (VGGT + BA + gsplat)
   - run_pipeline.sh 통합
   - VGGT 초기화 (3.5분)
@@ -48,12 +54,23 @@
   - apple: 80/80 cameras registered (100%)
   - P1 완료: 13.8분, COLMAP 100% 성공
 
-#### 4. 문서화 (Documentation)
-- ✅ **README.md** - H100 환경 반영
-- ✅ **QUICK_START_GUIDE.md** - 완전 재작성 (H100 기준)
-- ✅ **워크플로우 문서**
+#### 4. 도구 개발 (Tools Development)
+- ✅ **extract_frames.sh** (비디오 → 이미지 변환)
+  - 동영상에서 60개 프레임 균등 추출
+  - ffmpeg + bc 자동 설치
+  - 지원 포맷: MP4, MOV, AVI 등 모든 ffmpeg 호환 비디오
+  - 파이프라인 직접 호환 출력 (images/ 디렉토리)
+
+#### 5. 문서화 (Documentation)
+- ✅ **README.md** - H100 환경, P4 파이프라인, extract_frames.sh 반영
+- ✅ **QUICK_START_GUIDE.md** - P4 파이프라인, 비디오 워크플로우 추가 (2025-10-23)
+- ✅ **docs/ARCHITECTURE.md** - 전체 파이프라인 아키텍처 (P1-P5) 통합 문서
+- ✅ **docs/ENVIRONMENT_SETUP.md** - H100 환경 설정 완전 가이드
+- ✅ **docs/TOOLS_REFERENCE.md** - 모든 스크립트 사용법 레퍼런스
+- ✅ **워크플로우 문서** (docs/workflows/)
   - 20251006_VGGT-GSplat_WorkFlow.md (H100 호환성 해결)
   - 20251007_VGGT-GSplat_WorkFlow.md (P1 구현 & DTU 각도 정렬)
+  - 기타 연구 일지 (2025-09-08 ~ 2025-10-23)
 
 ---
 
@@ -70,6 +87,18 @@
 - 전통적인 COLMAP SfM baseline
 - DTU 각도 정렬로 100% 카메라 등록 성공
 - CO3Dv2: 비디오 프레임 → COLMAP 완벽 호환
+
+### P4 Balanced (VGGT + gsplat, no BA)
+
+| Dataset | Frames | VRAM | Time | PSNR | SSIM | LPIPS | Gaussians | Status |
+|---------|--------|------|------|------|------|-------|-----------|--------|
+| **DTU scan14** | 60 | ~2.6GB | 8.0min | 19.27 | 0.727 | - | 1,577,187 | ✅ |
+
+**특징**:
+- VGGT feed-forward + gsplat (Bundle Adjustment 제외)
+- P1 대비 2-3배 빠른 처리 (8분 vs 23분)
+- 메모리 효율적 (~2.6GB VRAM)
+- 빠른 프로토타이핑에 최적
 
 ### P5 Full (VGGT + BA + gsplat)
 
@@ -106,6 +135,14 @@
 - **CUDA Toolkit 12.1**: fused-ssim 컴파일 필수
 - **opencv-python-headless**: libGL.so.1 문제 해결
 
+### 5. 비디오 기반 워크플로우 (2025-10-23)
+- **문제**: 동영상 파일을 직접 파이프라인 입력으로 사용 불가
+- **해결**: extract_frames.sh로 60개 프레임 균등 추출
+- **장점**:
+  - 스마트폰 촬영 영상 직접 활용 가능
+  - CO3Dv2와 유사한 연속 프레임 → COLMAP 호환성 우수
+  - 데이터셋 준비 시간 단축 (1-2분)
+
 ---
 
 ## 🔄 진행 중 (In Progress)
@@ -113,12 +150,11 @@
 ### 데이터셋 확장
 - [ ] DTU 추가 스캔 (scan18, scan37 등)
 - [ ] CO3Dv2 다양한 카테고리 (hydrant, teddybear 등)
-- [ ] 커스텀 데이터셋 (사용자 직접 촬영)
+- [ ] 비디오 기반 커스텀 데이터셋 (extract_frames.sh 활용)
 
 ### 파이프라인 검증
 - [ ] P2 (VGGT only) 재검증
 - [ ] P3 (VGGT + BA) 재검증
-- [ ] P4 (VGGT + gsplat, no BA) 재검증
 
 ### 정량적 비교
 - [ ] P1 vs P5 Chamfer Distance
@@ -131,9 +167,10 @@
 
 ```
 vggt-gaussian-splatting-research/
-├── setup_environment.sh              # ⭐ 자동 환경 설치 (NEW)
-├── run_pipeline.sh                   # 통합 파이프라인 실행기
+├── setup_environment.sh              # 자동 환경 설치 (H100 최적화)
+├── run_pipeline.sh                   # 통합 파이프라인 실행기 (P1-P5)
 ├── prepare_standard_dataset.sh      # 데이터셋 표준화 (DTU 각도 정렬)
+├── extract_frames.sh                 # ⭐ 비디오 → 60개 프레임 추출 (NEW)
 ├── p1_baseline.py                   # P1 파이프라인 (COLMAP + gsplat)
 │
 ├── env/
@@ -150,12 +187,18 @@ vggt-gaussian-splatting-research/
 │
 ├── results/
 │   ├── P1_*/                        # COLMAP + gsplat 결과
+│   ├── P4_*/                        # VGGT + gsplat 결과 (no BA)
 │   └── P5_*/                        # VGGT + BA + gsplat 결과
 │
 └── docs/
-    ├── workflows/
-    │   ├── 20251006_VGGT-GSplat_WorkFlow.md  # H100 호환성
-    │   └── 20251007_VGGT-GSplat_WorkFlow.md  # P1 구현
+    ├── ARCHITECTURE.md               # ⭐ 파이프라인 아키텍처 (P1-P5) (NEW)
+    ├── ENVIRONMENT_SETUP.md          # ⭐ H100 환경 설정 가이드 (NEW)
+    ├── TOOLS_REFERENCE.md            # ⭐ 모든 스크립트 사용법 (NEW)
+    ├── workflows/                    # 연구 일지 (2025-09-08 ~ 2025-10-23)
+    │   ├── 20251006_VGGT-GSplat_WorkFlow.md
+    │   ├── 20251007_VGGT-GSplat_WorkFlow.md
+    │   └── ...                       # 기타 워크플로우 문서
+    ├── archive/                      # 구버전 문서
     ├── QUICK_START_GUIDE.md          # H100 Quick Start
     └── RESEARCH_STATUS.md            # 이 문서
 ```
@@ -177,12 +220,17 @@ python scripts/compare_pipelines.py \
 ```bash
 # DTU scan18
 ./prepare_standard_dataset.sh ./datasets/DTU/Rectified/scan18_train
-./run_pipeline.sh P1 ./datasets/DTU/scan18_standard
+./run_pipeline.sh P4 ./datasets/DTU/scan18_standard
 ./run_pipeline.sh P5 ./datasets/DTU/scan18_standard
+
+# 비디오 기반 커스텀 데이터셋
+./extract_frames.sh recording.mp4 ./datasets/my_room
+./run_pipeline.sh P4 ./datasets/my_room
+./run_pipeline.sh P5 ./datasets/my_room
 
 # CO3Dv2 hydrant
 ./prepare_standard_dataset.sh ./datasets/CO3Dv2/hydrant/*/images
-./run_pipeline.sh P1 ./datasets/CO3Dv2/hydrant_*_standard
+./run_pipeline.sh P4 ./datasets/CO3Dv2/hydrant_*_standard
 ```
 
 ### 3. Ablation Studies
@@ -207,7 +255,8 @@ python scripts/compare_pipelines.py \
 1. **H100 환경 최적화** - CUDA arch 9.0 지원
 2. **자동 환경 설치** - setup_environment.sh로 One-command setup
 3. **DTU COLMAP 호환성** - 각도 정렬로 100% 등록 달성
-4. **파이프라인 비교** - P1 (traditional) vs P5 (VGGT+BA+gsplat)
+4. **파이프라인 비교** - P1 (traditional) vs P4 (balanced) vs P5 (maximum quality)
+5. **비디오 워크플로우** - extract_frames.sh로 동영상 직접 활용
 
 ### 데이터셋 전략
 - **Seen Dataset**: CO3Dv2 (VGGT 학습 데이터)
@@ -223,14 +272,18 @@ python scripts/compare_pipelines.py \
 - [20251007 P1 구현 및 DTU 각도 정렬](docs/workflows/20251007_VGGT-GSplat_WorkFlow.md)
 
 ### 가이드 문서
-- [QUICK_START_GUIDE.md](./QUICK_START_GUIDE.md) - H100 환경 Quick Start
+- [QUICK_START_GUIDE.md](./QUICK_START_GUIDE.md) - H100 환경 Quick Start (P1-P5)
+- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) - 파이프라인 아키텍처 완전 가이드
+- [docs/ENVIRONMENT_SETUP.md](./docs/ENVIRONMENT_SETUP.md) - H100 환경 설정 상세 가이드
+- [docs/TOOLS_REFERENCE.md](./docs/TOOLS_REFERENCE.md) - 모든 스크립트 사용법 레퍼런스
 - [README.md](./README.md) - 프로젝트 개요
 - [RESEARCH_STATUS.md](./RESEARCH_STATUS.md) - 이 문서
 
 ### 핵심 스크립트
 - [setup_environment.sh](./setup_environment.sh) - 자동 환경 설치
-- [run_pipeline.sh](./run_pipeline.sh) - 파이프라인 실행기
+- [run_pipeline.sh](./run_pipeline.sh) - 파이프라인 실행기 (P1-P5)
 - [prepare_standard_dataset.sh](./prepare_standard_dataset.sh) - 데이터셋 준비
+- [extract_frames.sh](./extract_frames.sh) - 비디오 → 60개 프레임 추출
 - [p1_baseline.py](./p1_baseline.py) - P1 파이프라인
 
 ---
@@ -247,6 +300,6 @@ python scripts/compare_pipelines.py \
 
 ---
 
-**Last Updated**: 2025-10-07
+**Last Updated**: 2025-10-23
 **Maintainer**: [@Jihunkim95](https://github.com/Jihunkim95)
-**Status**: ✅ H100 환경 검증 완료, P1/P5 파이프라인 검증 완료
+**Status**: ✅ H100 환경 검증 완료, P1/P4/P5 파이프라인 검증 완료, 비디오 워크플로우 추가
