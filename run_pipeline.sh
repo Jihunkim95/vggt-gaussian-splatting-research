@@ -127,7 +127,8 @@ case "$PIPELINE" in
         source ./env/vggt_env/bin/activate
         PYTHONPATH=./libs/vggt:$PYTHONPATH python demo_colmap.py \
             --scene_dir "$TEMP_WORK_DIR" \
-            --conf_thres_value 5.0
+            --conf_thres_value 5.0 # customdataset 활용시 conf_thres_value 1.0
+            
 
         # Verify VGGT output
         if [ ! -f "$TEMP_WORK_DIR/sparse/points3D.bin" ]; then
