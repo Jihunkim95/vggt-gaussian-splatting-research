@@ -64,6 +64,15 @@ echo "⏰ 시작 시간: $(date)"
 # 시작 시간 기록
 START_TIME=$(date +%s)
 
+# conf_thres_value 자동 결정 (custom 데이터셋은 1.0, DTU 등은 5.0)
+if [[ "$DATA_DIR" == *"custom"* ]]; then
+    CONF_THRES=1.0
+    echo "🔧 Custom 데이터셋 감지 → conf_thres_value=1.0"
+else
+    CONF_THRES=5.0
+    echo "🔧 표준 데이터셋 (DTU 등) → conf_thres_value=5.0"
+fi
+
 case "$PIPELINE" in
     "P1")
         echo "📋 P1: Original COLMAP SfM + gsplat (Images Only) 실행"
@@ -99,7 +108,7 @@ case "$PIPELINE" in
         source ./env/vggt_env/bin/activate
         PYTHONPATH=./libs/vggt:$PYTHONPATH python demo_colmap.py \
             --scene_dir "$TEMP_WORK_DIR" \
-            --conf_thres_value 5.0
+            --conf_thres_value $CONF_THRES
 
         # 결과 복사
         cp -r "$TEMP_WORK_DIR/sparse" "$RESULT_DIR/"
@@ -111,7 +120,7 @@ case "$PIPELINE" in
         PYTHONPATH=./libs/vggt:$PYTHONPATH python demo_colmap.py \
             --scene_dir "$TEMP_WORK_DIR" \
             --use_ba \
-            --conf_thres_value 5.0 \
+            --conf_thres_value $CONF_THRES \
             --max_reproj_error 8.0 \
             --max_query_pts 4096
 
@@ -127,7 +136,7 @@ case "$PIPELINE" in
         source ./env/vggt_env/bin/activate
         PYTHONPATH=./libs/vggt:$PYTHONPATH python demo_colmap.py \
             --scene_dir "$TEMP_WORK_DIR" \
-            --conf_thres_value 5.0 # customdataset 활용시 conf_thres_value 1.0
+            --conf_thres_value $CONF_THRES
             
 
         # Verify VGGT output
@@ -172,7 +181,7 @@ case "$PIPELINE" in
         PYTHONPATH=./libs/vggt:$PYTHONPATH python demo_colmap.py \
             --scene_dir "$TEMP_WORK_DIR" \
             --use_ba \
-            --conf_thres_value 5.0 \
+            --conf_thres_value $CONF_THRES \
             --max_reproj_error 8.0 \
             --max_query_pts 4096
 
