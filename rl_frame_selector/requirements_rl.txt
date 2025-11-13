@@ -1,0 +1,14 @@
+# RL Frame Selector 추가 패키지
+
+# 강화학습 프레임워크
+stable-baselines3>=2.3.0
+gymnasium>=0.29.0
+
+# Feature extraction
+opencv-python>=4.8.0
+scikit-image>=0.22.0
+
+# Utilities
+tensorboard>=2.15.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
