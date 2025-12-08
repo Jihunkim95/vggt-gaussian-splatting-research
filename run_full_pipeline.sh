@@ -9,16 +9,18 @@
 # 예시:
 #   ./run_full_pipeline.sh ./datasets/custom/video.mp4 P5
 #   ./run_full_pipeline.sh ./datasets/custom/images/ P4 --target-count 80
-#   ./run_full_pipeline.sh ./my_video.mp4 P5 --num-strata 15
+#   ./run_full_pipeline.sh ./my_video.mp4 P5 --overlap-ratio 0.7
 #
 # 파이프라인:
 #   P1: COLMAP → 3DGS
 #   P4: VGGT → 3DGS
 #   P5: VGGT+BA → 3DGS
 #
-# 품질 평가 방법:
-#   - BRISQUE: 통계적 자연스러움 기반 (50%)
-#   - Laplacian Sharpness: 선명도 기반 (50%)
+# 품질 평가 방법 (Farneback 2003, Pech-Pacheco 2000):
+#   - Optical Flow: 정지 프레임 제거 (Farneback Dense Flow)
+#   - Laplacian Sharpness: 블러 프레임 제거
+#   - Brightness: 노출 이상 프레임 제거
+#   - Overlap 기반 샘플링: 60-70% 오버랩 보장 균등 간격 선택
 ##############################################################################
 
 set -e  # Exit on error
@@ -40,15 +42,18 @@ show_help() {
     echo ""
     echo "선택 옵션:"
     echo "  --target-count N       최종 이미지 수 (기본: 60)"
-    echo "  --intermediate-count N 비디오에서 추출할 중간 프레임 수 (기본: 300)"
-    echo "  --num-strata N         시간 구간 분할 수 (기본: 10)"
+    echo "  --overlap-ratio N      프레임 간 오버랩 비율 (기본: 0.65, 즉 65%)"
+    echo "  --flow-threshold N     Optical Flow 임계값 (기본: 0.3)"
+    echo "  --sharpness-threshold N  선명도 임계값 (기본: 30.0)"
     echo "  --skip-sampling        품질 샘플링 건너뛰기 (이미지 디렉토리 직접 사용)"
     echo "  --keep-temp            임시 디렉토리 유지 (디버깅용)"
     echo "  -h, --help             도움말 표시"
     echo ""
-    echo "품질 평가 방법:"
-    echo "  - BRISQUE: 통계적 자연스러움 기반 (50%)"
-    echo "  - Laplacian Sharpness: 선명도 기반 (50%)"
+    echo "품질 평가 방법 (Farneback 2003, Pech-Pacheco 2000):"
+    echo "  - Optical Flow: 정지 프레임 제거"
+    echo "  - Laplacian Sharpness: 블러 프레임 제거"
+    echo "  - Brightness: 노출 이상 프레임 제거"
+    echo "  - Overlap 기반 샘플링: 60-70% 오버랩 보장 균등 간격 선택"
     echo ""
     echo "예시:"
     echo "  # 비디오로 P5 파이프라인 실행 (기본 설정)"
@@ -57,8 +62,8 @@ show_help() {
     echo "  # 이미지 디렉토리로 P4 실행 (80개 샘플링)"
     echo "  $0 ./images/ P4 --target-count 80"
     echo ""
-    echo "  # 15개 구간으로 세밀한 샘플링"
-    echo "  $0 ./video.mp4 P5 --num-strata 15 --target-count 90"
+    echo "  # 70% 오버랩으로 샘플링"
+    echo "  $0 ./video.mp4 P5 --overlap-ratio 0.7 --target-count 60"
     echo ""
 }
 
@@ -84,17 +89,18 @@ shift 2
 
 # 기본값 설정
 TARGET_COUNT=60
-INTERMEDIATE_COUNT=300
-NUM_STRATA=10
+OVERLAP_RATIO=0.65
+FLOW_THRESHOLD=0.3
+SHARPNESS_THRESHOLD=30.0
 SKIP_SAMPLING=false
 KEEP_TEMP=false
 
-# 캐시를 /data로 리다이렉트하여 시스템 디스크 보호
-export TORCH_HOME=/data/.cache/torch
-export PIP_CACHE_DIR=/data/.cache/pip
-export TRANSFORMERS_CACHE=/data/.cache/huggingface
-export HF_HOME=/data/.cache/huggingface
-export TORCH_EXTENSIONS_DIR=/data/.cache/torch_extensions
+# 캐시를 사용자 홈으로 리다이렉트
+export TORCH_HOME=/data/users/jhkim/.cache/torch
+export PIP_CACHE_DIR=/data/users/jhkim/.cache/pip
+export TRANSFORMERS_CACHE=/data/users/jhkim/.cache/huggingface
+export HF_HOME=/data/users/jhkim/.cache/huggingface
+export TORCH_EXTENSIONS_DIR=/data/users/jhkim/.cache/torch_extensions
 
 # 옵션 파싱
 while [[ $# -gt 0 ]]; do
@@ -103,12 +109,16 @@ while [[ $# -gt 0 ]]; do
             TARGET_COUNT="$2"
             shift 2
             ;;
-        --intermediate-count)
-            INTERMEDIATE_COUNT="$2"
+        --overlap-ratio)
+            OVERLAP_RATIO="$2"
             shift 2
             ;;
-        --num-strata)
-            NUM_STRATA="$2"
+        --flow-threshold)
+            FLOW_THRESHOLD="$2"
+            shift 2
+            ;;
+        --sharpness-threshold)
+            SHARPNESS_THRESHOLD="$2"
             shift 2
             ;;
         --skip-sampling)
@@ -157,8 +167,8 @@ echo -e "${GREEN}📁 입력:${NC} $INPUT_PATH"
 echo -e "${GREEN}📋 타입:${NC} $INPUT_TYPE"
 echo -e "${GREEN}🔧 파이프라인:${NC} $PIPELINE"
 echo -e "${GREEN}🎯 목표 이미지 수:${NC} $TARGET_COUNT"
-echo -e "${GREEN}📊 Strata 수:${NC} $NUM_STRATA"
-echo -e "${GREEN}🔬 품질 방법:${NC} BRISQUE 50% + Sharpness 50%"
+echo -e "${GREEN}🔗 오버랩 비율:${NC} ${OVERLAP_RATIO}"
+echo -e "${GREEN}🔬 품질 방법:${NC} Optical Flow → Laplacian + Brightness → Overlap Sampling"
 echo -e "${BLUE}══════════════════════════════════════════════════════════════${NC}"
 echo ""
 
@@ -173,7 +183,16 @@ else
     echo -e "${GREEN}🔵 Step 1/2: 품질 기반 이미지 샘플링${NC}"
 
     # 출력 디렉토리 설정
-    OUTPUT_DIR="./datasets/${INPUT_NAME}_quality_${TIMESTAMP}"
+    # 입력이 datasets/custom/ 안에 있으면 같은 위치에 출력
+    INPUT_DIR=$(dirname "$INPUT_PATH")
+    if [[ "$INPUT_DIR" == *"datasets/custom"* ]]; then
+        OUTPUT_DIR="${INPUT_DIR}/${INPUT_NAME}_quality_${TIMESTAMP}"
+    else
+        OUTPUT_DIR="./datasets/custom/${INPUT_NAME}_quality_${TIMESTAMP}"
+    fi
+
+    # 출력 디렉토리 부모 생성
+    mkdir -p "$(dirname "$OUTPUT_DIR")"
 
     # 환경 활성화 확인
     if [ -z "$VIRTUAL_ENV" ]; then
@@ -184,16 +203,14 @@ else
     # quality_sampler.py 실행
     echo -e "${BLUE}📊 Quality Sampler 실행 중...${NC}"
 
-    SAMPLER_CMD="python quality_sampler.py \"$INPUT_PATH\" \
-        --output-dir \"$OUTPUT_DIR\" \
+    # Overlap 기반 프레임 샘플링
+    ./env/vggt_env/bin/python quality_sampler.py "$INPUT_PATH" \
+        --output-dir "$OUTPUT_DIR" \
         --target-count $TARGET_COUNT \
-        --num-strata $NUM_STRATA"
-
-    if [ "$INPUT_TYPE" = "video" ]; then
-        SAMPLER_CMD="$SAMPLER_CMD --intermediate-count $INTERMEDIATE_COUNT"
-    fi
-
-    eval $SAMPLER_CMD || error_exit "Quality Sampler 실행 실패"
+        --overlap-ratio $OVERLAP_RATIO \
+        --flow-threshold $FLOW_THRESHOLD \
+        --sharpness-threshold $SHARPNESS_THRESHOLD \
+        || error_exit "Quality Sampler 실행 실패"
 
     echo -e "${GREEN}✅ 품질 샘플링 완료: $OUTPUT_DIR${NC}"
     echo ""
