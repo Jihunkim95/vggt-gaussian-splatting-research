@@ -74,18 +74,19 @@ echo "⏰ 시작 시간: $(date)"
 # 시작 시간 기록
 START_TIME=$(date +%s)
 
-# conf_thres_value 자동 결정
-# - Custom 폴더: 낮은 임계값 (P4: 2.0, P5: 0.05)
-# - 그 외 (DTU 등): 높은 임계값 (5.0)
-# 감지 기준: 경로에 "custom" 또는 "quality_" 포함 여부
-if [[ "$DATA_DIR" == *"custom"* ]] || [[ "$DATA_DIR" == *"quality_"* ]]; then
-    CONF_THRES=5.0      # P2, P3, P4용
-    CONF_THRES_BA=5.0   # P5용 (BA에 더 많은 포인트 필요)
-    echo "🔧 Custom 데이터셋 감지 → P4: conf_thres=5.0, P5: conf_thres=5.0"
+# conf_thres_value 자동 결정 및 재시도 여부
+# - DTU: 고정 conf_thres=5.0 (재시도 없음)
+# - 그 외: 자동 재시도 활성화 (5.0 → 0.5)
+if [[ "$DATA_DIR" == *"DTU"* ]] && [[ "$DATA_DIR" == *"scan"* ]]; then
+    CONF_THRES=5.0
+    CONF_THRES_BA=5.0
+    AUTO_RETRY=false
+    echo "🔧 DTU 데이터셋 감지 → conf_thres=5.0 (재시도 없음)"
 else
     CONF_THRES=5.0
     CONF_THRES_BA=5.0
-    echo "🔧 표준 데이터셋 감지 (DTU 등) → conf_thres_value=5.0"
+    AUTO_RETRY=true
+    echo "🔧 일반 데이터셋 감지 → conf_thres=5.0 (자동 재시도 활성화)"
 fi
 
 case "$PIPELINE" in
@@ -146,11 +147,12 @@ case "$PIPELINE" in
         echo "🔴 Step 1: VGGT Feed-Forward"
         SETUP_START=$(date +%s)
 
-        # Custom 데이터셋: 실패 시 conf_thres_value를 점진적으로 낮춤
-        if [[ "$DATA_DIR" == *"custom"* ]] || [[ "$DATA_DIR" == *"quality_"* ]]; then
+        # 자동 재시도 활성화된 경우: conf_thres_value를 점진적으로 낮춤
+        if [ "$AUTO_RETRY" = true ]; then
             VGGT_SUCCESS=false
-            CURRENT_CONF=4.0
+            CURRENT_CONF=5.0
             MIN_CONF=0.5
+            MIN_POINTS=1000  # gsplat 학습에 필요한 최소 포인트 수
 
             while (( $(echo "$CURRENT_CONF >= $MIN_CONF" | bc -l) )); do
                 echo "🔄 VGGT 시도: conf_thres_value=$CURRENT_CONF"
@@ -162,23 +164,32 @@ case "$PIPELINE" in
                     --scene_dir "$TEMP_WORK_DIR" \
                     --conf_thres_value $CURRENT_CONF 2>&1 || true
 
-                # points3D.bin 파일 존재 여부로 성공 판단
+                # points3D.bin 파일 존재 및 포인트 수 확인
                 if [ -f "$TEMP_WORK_DIR/sparse/points3D.bin" ]; then
-                    echo "✅ VGGT 성공! conf_thres_value=$CURRENT_CONF"
-                    VGGT_SUCCESS=true
-                    break
+                    POINT_COUNT=$(./env/vggt_env/bin/python -c "import pycolmap; r=pycolmap.Reconstruction('$TEMP_WORK_DIR/sparse'); print(len(r.points3D))" 2>/dev/null || echo "0")
+                    echo "   📊 생성된 3D 포인트: $POINT_COUNT개"
+
+                    if [ "$POINT_COUNT" -ge "$MIN_POINTS" ]; then
+                        echo "✅ VGGT 성공! conf_thres_value=$CURRENT_CONF (포인트: $POINT_COUNT개)"
+                        VGGT_SUCCESS=true
+                        break
+                    else
+                        echo "⚠️ 포인트 부족 ($POINT_COUNT < $MIN_POINTS), 임계값 낮추는 중..."
+                    fi
+                else
+                    echo "⚠️ sparse 생성 실패, 임계값 낮추는 중..."
                 fi
 
-                echo "⚠️ VGGT 실패 (conf_thres=$CURRENT_CONF), 임계값 낮추는 중..."
                 CURRENT_CONF=$(echo "$CURRENT_CONF - 0.5" | bc -l)
             done
 
             if [ "$VGGT_SUCCESS" = false ]; then
-                echo "❌ VGGT 실패: 모든 conf_thres_value 시도 실패"
+                echo "❌ VGGT 실패: 모든 conf_thres_value 시도 후에도 포인트 부족"
+                echo "💡 데이터셋 품질을 확인하세요 (블러, 노출, 오버랩 등)"
                 exit 1
             fi
         else
-            # 표준 데이터셋: 단일 시도
+            # DTU 데이터셋: 단일 시도
             PYTHONPATH=./libs/vggt:$PYTHONPATH ./env/vggt_env/bin/python demo_colmap.py \
                 --scene_dir "$TEMP_WORK_DIR" \
                 --conf_thres_value $CONF_THRES
@@ -251,8 +262,8 @@ EOF
         echo "🟢 Step 1: VGGT + Bundle Adjustment"
         SETUP_START=$(date +%s)
 
-        # Custom 데이터셋: BA 실패 시 conf_thres_value를 점진적으로 낮춤
-        if [[ "$DATA_DIR" == *"custom"* ]] || [[ "$DATA_DIR" == *"quality_"* ]]; then
+        # 자동 재시도 활성화된 경우: BA 실패 시 conf_thres_value를 점진적으로 낮춤
+        if [ "$AUTO_RETRY" = true ]; then
             BA_SUCCESS=false
             CURRENT_CONF=5.0
             MIN_CONF=0.01

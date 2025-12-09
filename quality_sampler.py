@@ -251,15 +251,20 @@ class FrameSelector:
         """
         이미지 리스트 분석 (다운샘플링 적용)
 
+        이미지는 이미 정제된 데이터일 가능성이 높으므로:
+        - Optical Flow 체크 스킵 (정지 프레임 필터 비활성화)
+        - Sharpness + Brightness만 체크
+
         Args:
             image_paths: 이미지 파일 경로 리스트
 
         Returns:
             각 프레임의 분석 결과 리스트
         """
-        self.flow_analyzer.reset()
         frame_infos = []
         analysis_size = self.config.analysis_size
+
+        print(f"📷 이미지 모드: Optical Flow 체크 스킵 (sharpness + brightness만 사용)")
 
         for idx, img_path in enumerate(tqdm(image_paths, desc="프레임 분석 중")):
             image = cv2.imread(img_path)
@@ -272,24 +277,19 @@ class FrameSelector:
             # 품질 분석 (다운샘플링된 이미지 사용)
             sharpness = self.quality_analyzer.compute_sharpness(small_image)
             brightness = self.quality_analyzer.compute_brightness(small_image)
-            flow_mag = self.flow_analyzer.compute_flow_magnitude(small_image)
 
-            # 품질 체크
+            # 품질 체크 (sharpness + brightness만)
             is_valid, reject_reason = self.quality_analyzer.check_quality(
                 sharpness, brightness, self.config
             )
 
-            # 정지 구간 체크 (첫 프레임 제외)
-            if idx > 0 and flow_mag < self.config.flow_threshold:
-                is_valid = False
-                reject_reason = "static"
-
+            # 이미지는 flow 체크 스킵 (이미 정제된 데이터)
             frame_info = FrameInfo(
                 index=idx,
                 path=img_path,
                 sharpness=sharpness,
                 brightness=brightness,
-                flow_magnitude=flow_mag,
+                flow_magnitude=0.0,  # 이미지는 flow 미사용
                 is_valid=is_valid,
                 reject_reason=reject_reason
             )
